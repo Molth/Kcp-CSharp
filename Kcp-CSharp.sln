@@ -1,0 +1,16 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kcp-CSharp", "Kcp-CSharp\Kcp-CSharp.csproj", "{6AF3AD2B-5A9D-4C93-99D6-5C75FC22D3ED}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6AF3AD2B-5A9D-4C93-99D6-5C75FC22D3ED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6AF3AD2B-5A9D-4C93-99D6-5C75FC22D3ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6AF3AD2B-5A9D-4C93-99D6-5C75FC22D3ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6AF3AD2B-5A9D-4C93-99D6-5C75FC22D3ED}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,1 @@
+This project is a KCP instance callback wrapper for (Unity/Godot/.NET), based on KcpTransport: https://github.com/Cysharp/KcpTransport
