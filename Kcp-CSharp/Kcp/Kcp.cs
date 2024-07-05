@@ -10,6 +10,7 @@ using static KCP.IKCP;
 
 // ReSharper disable IdentifierTypo
 // ReSharper disable GrammarMistakeInComment
+// ReSharper disable PossibleNullReferenceException
 
 namespace KCP
 {
