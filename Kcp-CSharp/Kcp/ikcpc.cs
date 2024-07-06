@@ -18,30 +18,36 @@ namespace KCP
 {
     internal static unsafe class IKCP
     {
-        private static void memcpy(void* dest, void* src, int n) => Unsafe.CopyBlock(dest, src, (uint)n);
-
-        private static void memcpy(void* dest, void* src, uint n) => Unsafe.CopyBlock(dest, src, n);
-
-        private static void* malloc(nint size)
-#if !UNITY_2021_3_OR_NEWER
-            => NativeMemory.AllocZeroed((nuint)size, 1);
-#else
+        private static void memcpy(void* dest, void* src, int n)
         {
-            var pointer = (void*)Marshal.AllocHGlobal(size);
-            Unsafe.InitBlock(pointer, 0, (uint)size);
-            return pointer;
+#if UNITY_ANDROID || GODOT_ANDROID
+            Unsafe.CopyBlockUnaligned(dest, src, (uint)n);
+#else
+            Unsafe.CopyBlock(dest, src, (uint)n);
+#endif
         }
+
+        private static void memcpy(void* dest, void* src, uint n)
+        {
+#if UNITY_ANDROID || GODOT_ANDROID
+            Unsafe.CopyBlockUnaligned(dest, src, n);
+#else
+            Unsafe.CopyBlock(dest, src, n);
+#endif
+        }
+
+        private static void* malloc(nint size) =>
+#if !UNITY_2021_3_OR_NEWER
+            NativeMemory.Alloc((nuint)size);
+#else
+            (void*)Marshal.AllocHGlobal(size);
 #endif
 
-        private static void* malloc(nuint size)
+        private static void* malloc(nuint size) =>
 #if !UNITY_2021_3_OR_NEWER
-            => NativeMemory.AllocZeroed(size, 1);
+            NativeMemory.Alloc(size);
 #else
-        {
-            var pointer = (void*)Marshal.AllocHGlobal((nint)size);
-            Unsafe.InitBlock(pointer, 0, (uint)size);
-            return pointer;
-        }
+            (void*)Marshal.AllocHGlobal((nint)size);
 #endif
 
         private static void free(void* ptr) =>
