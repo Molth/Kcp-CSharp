@@ -2,7 +2,6 @@
 using System;
 using System.Threading;
 #endif
-using System.Runtime.InteropServices;
 using static KCP.IKCP;
 
 #pragma warning disable CS8602
@@ -370,8 +369,8 @@ namespace KCP
         /// <returns>Sent bytes</returns>
         public int Send(byte[] buffer)
         {
-            ref var src = ref buffer[0];
-            return ikcp_send(_kcp, (byte*)src, buffer.Length);
+            fixed (byte* src = &buffer[0])
+                return ikcp_send(_kcp, src, buffer.Length);
         }
 
         /// <summary>
@@ -382,8 +381,8 @@ namespace KCP
         /// <returns>Sent bytes</returns>
         public int Send(byte[] buffer, int length)
         {
-            ref var src = ref buffer[0];
-            return ikcp_send(_kcp, (byte*)src, length);
+            fixed (byte* src = &buffer[0])
+                return ikcp_send(_kcp, src, length);
         }
 
         /// <summary>
@@ -395,8 +394,8 @@ namespace KCP
         /// <returns>Sent bytes</returns>
         public int Send(byte[] buffer, int offset, int length)
         {
-            ref var src = ref buffer[offset];
-            return ikcp_send(_kcp, (byte*)src, length);
+            fixed (byte* src = &buffer[offset])
+                return ikcp_send(_kcp, src, length);
         }
 
         /// <summary>
@@ -406,8 +405,8 @@ namespace KCP
         /// <returns>Sent bytes</returns>
         public int Send(ReadOnlySpan<byte> buffer)
         {
-            ref var src = ref MemoryMarshal.GetReference(buffer);
-            return ikcp_send(_kcp, (byte*)src, buffer.Length);
+            fixed (byte* src = &buffer[0])
+                return ikcp_send(_kcp, src, buffer.Length);
         }
 
         /// <summary>
@@ -417,8 +416,8 @@ namespace KCP
         /// <returns>Sent bytes</returns>
         public int Send(ReadOnlyMemory<byte> buffer)
         {
-            ref var src = ref MemoryMarshal.GetReference(buffer.Span);
-            return ikcp_send(_kcp, (byte*)src, buffer.Length);
+            fixed (byte* src = &buffer.Span[0])
+                return ikcp_send(_kcp, src, buffer.Length);
         }
 
         /// <summary>
@@ -428,8 +427,8 @@ namespace KCP
         /// <returns>Sent bytes</returns>
         public int Send(ArraySegment<byte> buffer)
         {
-            ref var src = ref buffer.Array[buffer.Offset];
-            return ikcp_send(_kcp, (byte*)src, buffer.Count);
+            fixed (byte* src = &buffer.Array[buffer.Offset])
+                return ikcp_send(_kcp, src, buffer.Count);
         }
 
         /// <summary>
@@ -456,8 +455,8 @@ namespace KCP
         /// <returns>Input bytes</returns>
         public int Input(byte[] buffer)
         {
-            ref var src = ref buffer[0];
-            return ikcp_input(_kcp, (byte*)src, buffer.Length);
+            fixed (byte* src = &buffer[0])
+                return ikcp_input(_kcp, src, buffer.Length);
         }
 
         /// <summary>
@@ -468,8 +467,8 @@ namespace KCP
         /// <returns>Input bytes</returns>
         public int Input(byte[] buffer, int length)
         {
-            ref var src = ref buffer[0];
-            return ikcp_input(_kcp, (byte*)src, length);
+            fixed (byte* src = &buffer[0])
+                return ikcp_input(_kcp, src, length);
         }
 
         /// <summary>
@@ -481,8 +480,8 @@ namespace KCP
         /// <returns>Input bytes</returns>
         public int Input(byte[] buffer, int offset, int length)
         {
-            ref var src = ref buffer[offset];
-            return ikcp_input(_kcp, (byte*)src, length);
+            fixed (byte* src = &buffer[offset])
+                return ikcp_input(_kcp, src, length);
         }
 
         /// <summary>
@@ -492,8 +491,8 @@ namespace KCP
         /// <returns>Input bytes</returns>
         public int Input(ReadOnlySpan<byte> buffer)
         {
-            ref var src = ref MemoryMarshal.GetReference(buffer);
-            return ikcp_input(_kcp, (byte*)src, buffer.Length);
+            fixed (byte* src = &buffer[0])
+                return ikcp_input(_kcp, src, buffer.Length);
         }
 
         /// <summary>
@@ -503,8 +502,8 @@ namespace KCP
         /// <returns>Input bytes</returns>
         public int Input(ReadOnlyMemory<byte> buffer)
         {
-            ref var src = ref MemoryMarshal.GetReference(buffer.Span);
-            return ikcp_input(_kcp, (byte*)src, buffer.Length);
+            fixed (byte* src = &buffer.Span[0])
+                return ikcp_input(_kcp, src, buffer.Length);
         }
 
         /// <summary>
@@ -514,8 +513,8 @@ namespace KCP
         /// <returns>Input bytes</returns>
         public int Input(ArraySegment<byte> buffer)
         {
-            ref var src = ref buffer.Array[buffer.Offset];
-            return ikcp_input(_kcp, (byte*)src, buffer.Count);
+            fixed (byte* src = &buffer.Array[buffer.Offset])
+                return ikcp_input(_kcp, src, buffer.Count);
         }
 
         /// <summary>
@@ -548,8 +547,8 @@ namespace KCP
         /// <returns>Received bytes</returns>
         public int Receive(byte[] buffer)
         {
-            ref var dest = ref buffer[0];
-            return ikcp_recv(_kcp, (byte*)dest, buffer.Length);
+            fixed (byte* dest = &buffer[0])
+                return ikcp_recv(_kcp, dest, buffer.Length);
         }
 
         /// <summary>
@@ -560,8 +559,8 @@ namespace KCP
         /// <returns>Received bytes</returns>
         public int Receive(byte[] buffer, int length)
         {
-            ref var dest = ref buffer[0];
-            return ikcp_recv(_kcp, (byte*)dest, length);
+            fixed (byte* dest = &buffer[0])
+                return ikcp_recv(_kcp, dest, length);
         }
 
         /// <summary>
@@ -573,8 +572,8 @@ namespace KCP
         /// <returns>Received bytes</returns>
         public int Receive(byte[] buffer, int offset, int length)
         {
-            ref var dest = ref buffer[offset];
-            return ikcp_recv(_kcp, (byte*)dest, length);
+            fixed (byte* dest = &buffer[offset])
+                return ikcp_recv(_kcp, dest, length);
         }
 
         /// <summary>
@@ -584,8 +583,8 @@ namespace KCP
         /// <returns>Received bytes</returns>
         public int Receive(Span<byte> buffer)
         {
-            ref var dest = ref MemoryMarshal.GetReference(buffer);
-            return ikcp_recv(_kcp, (byte*)dest, buffer.Length);
+            fixed (byte* dest = &buffer[0])
+                return ikcp_recv(_kcp, dest, buffer.Length);
         }
 
         /// <summary>
@@ -595,8 +594,8 @@ namespace KCP
         /// <returns>Received bytes</returns>
         public int Receive(Memory<byte> buffer)
         {
-            ref var dest = ref MemoryMarshal.GetReference(buffer.Span);
-            return ikcp_recv(_kcp, (byte*)dest, buffer.Length);
+            fixed (byte* dest = &buffer.Span[0])
+                return ikcp_recv(_kcp, dest, buffer.Length);
         }
 
         /// <summary>
@@ -606,8 +605,8 @@ namespace KCP
         /// <returns>Received bytes</returns>
         public int Receive(ArraySegment<byte> buffer)
         {
-            ref var dest = ref buffer.Array[buffer.Offset];
-            return ikcp_recv(_kcp, (byte*)dest, buffer.Count);
+            fixed (byte* dest = &buffer.Array[buffer.Offset])
+                return ikcp_recv(_kcp, dest, buffer.Count);
         }
 
         /// <summary>
