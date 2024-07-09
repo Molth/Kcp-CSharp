@@ -1224,6 +1224,8 @@ namespace KCP
 
         public static int ikcp_setmtu(IKCPCB* kcp, int mtu)
         {
+            if (kcp->mtu == (uint)mtu)
+                return 0;
             if (mtu < (int)OVERHEAD)
                 return -1;
             var buffer = (byte*)ikcp_malloc((nuint)((mtu + OVERHEAD) * 3));
