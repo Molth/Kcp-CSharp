@@ -2,6 +2,7 @@
 using System;
 using System.Threading;
 #endif
+using System.Runtime.InteropServices;
 using static KCP.IKCP;
 
 #pragma warning disable CS8602
@@ -298,7 +299,7 @@ namespace KCP
         /// <summary>
         ///     Output function pointer
         /// </summary>
-        public nint Output => _kcp->output;
+        public GCHandle Output => _kcp->output;
 
         /// <summary>
         ///     Dispose
