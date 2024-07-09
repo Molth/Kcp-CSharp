@@ -146,11 +146,11 @@ namespace KCP
             if (size == 0 || kcp->user == 0)
                 return;
             if (kcp->user == 1)
-                Unsafe.As<nint, KcpCallback>(ref kcp->output)((byte*)data, size);
+                ((KcpCallback)kcp->output.Target)((byte*)data, size);
             else if (kcp->user == 2)
-                Unsafe.As<nint, KcpRefCallback>(ref kcp->output)(ref *(byte*)data, size);
+                ((KcpRefCallback)kcp->output.Target)(ref *(byte*)data, size);
             else if (kcp->user == 3)
-                Unsafe.As<nint, KcpSpanCallback>(ref kcp->output)(new Span<byte>((byte*)data, size));
+                ((KcpSpanCallback)kcp->output.Target)(new Span<byte>((byte*)data, size));
         }
 
         public static IKCPCB* ikcp_create(uint conv)
@@ -207,7 +207,7 @@ namespace KCP
             kcp->fastlimit = (int)FASTACK_LIMIT;
             kcp->nocwnd = 0;
             kcp->xmit = 0;
-            kcp->output = IntPtr.Zero;
+            kcp->output = new GCHandle();
             return kcp;
         }
 
@@ -256,7 +256,7 @@ namespace KCP
                 kcp->user = 0;
                 kcp->buffer = null;
                 kcp->acklist = null;
-                kcp->output = IntPtr.Zero;
+                kcp->output.Free();
                 ikcp_free(kcp);
             }
         }
@@ -264,25 +264,25 @@ namespace KCP
         public static void ikcp_resetoutput(IKCPCB* kcp)
         {
             kcp->user = 0;
-            kcp->output = IntPtr.Zero;
+            kcp->output.Free();
         }
 
         public static void ikcp_setoutput(IKCPCB* kcp, KcpCallback output)
         {
             kcp->user = 1;
-            kcp->output = Unsafe.As<KcpCallback, nint>(ref output);
+            kcp->output = GCHandle.Alloc(output);
         }
 
         public static void ikcp_setoutput(IKCPCB* kcp, KcpRefCallback output)
         {
             kcp->user = 2;
-            kcp->output = Unsafe.As<KcpRefCallback, nint>(ref output);
+            kcp->output = GCHandle.Alloc(output);
         }
 
         public static void ikcp_setoutput(IKCPCB* kcp, KcpSpanCallback output)
         {
             kcp->user = 3;
-            kcp->output = Unsafe.As<KcpSpanCallback, nint>(ref output);
+            kcp->output = GCHandle.Alloc(output);
         }
 
         public static int ikcp_recv(IKCPCB* kcp, byte* buffer, int len)

@@ -24,11 +24,6 @@ namespace KCP
         private IKCPCB* _kcp;
 
         /// <summary>
-        ///     Output function
-        /// </summary>
-        private Delegate _output;
-
-        /// <summary>
         ///     Disposed
         /// </summary>
         private int _disposed;
@@ -49,7 +44,6 @@ namespace KCP
         public Kcp(uint conv, KcpCallback output)
         {
             _kcp = ikcp_create(conv);
-            _output = output;
             ikcp_setoutput(_kcp, output);
         }
 
@@ -69,7 +63,6 @@ namespace KCP
         public Kcp(uint conv, KcpRefCallback output)
         {
             _kcp = ikcp_create(conv);
-            _output = output;
             ikcp_setoutput(_kcp, output);
         }
 
@@ -89,7 +82,6 @@ namespace KCP
         public Kcp(uint conv, KcpSpanCallback output)
         {
             _kcp = ikcp_create(conv);
-            _output = output;
             ikcp_setoutput(_kcp, output);
         }
 
@@ -317,7 +309,6 @@ namespace KCP
                 return;
             ikcp_release(_kcp);
             _kcp = null;
-            _output = null;
             GC.SuppressFinalize(this);
         }
 
@@ -328,8 +319,6 @@ namespace KCP
         public void SetOutput(KcpCallback output)
         {
             ikcp_resetoutput(_kcp);
-            _output = null;
-            _output = output;
             ikcp_setoutput(_kcp, output);
         }
 
@@ -340,8 +329,6 @@ namespace KCP
         public void SetOutput(KcpRefCallback output)
         {
             ikcp_resetoutput(_kcp);
-            _output = null;
-            _output = output;
             ikcp_setoutput(_kcp, output);
         }
 
@@ -352,8 +339,6 @@ namespace KCP
         public void SetOutput(KcpSpanCallback output)
         {
             ikcp_resetoutput(_kcp);
-            _output = null;
-            _output = output;
             ikcp_setoutput(_kcp, output);
         }
 
