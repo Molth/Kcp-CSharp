@@ -141,19 +141,14 @@ namespace KCP
 
         private static void ikcp_segment_delete(IKCPCB* kcp, IKCPSEG* seg) => ikcp_free(seg);
 
-        private static void ikcp_output(IKCPCB* kcp, void* data, int size)
+        private static void ikcp_output(IKCPCB* kcp, byte[] data, int size)
         {
-            if (size == 0 || kcp->user == 0)
+            if (size == 0)
                 return;
-            if (kcp->user == 1)
-                Unsafe.As<nint, KcpCallback>(ref kcp->output)((byte*)data, size);
-            else if (kcp->user == 2)
-                Unsafe.As<nint, KcpRefCallback>(ref kcp->output)(ref *(byte*)data, size);
-            else if (kcp->user == 3)
-                Unsafe.As<nint, KcpSpanCallback>(ref kcp->output)(new Span<byte>((byte*)data, size));
+            Unsafe.As<nint, KcpCallback>(ref kcp->output)(data, size);
         }
 
-        public static IKCPCB* ikcp_create(uint conv)
+        public static IKCPCB* ikcp_create(uint conv, ref byte[] buffer)
         {
             var kcp = (IKCPCB*)ikcp_malloc(sizeof(IKCPCB));
             if (kcp == null)
@@ -173,14 +168,7 @@ namespace KCP
             kcp->mtu = MTU_DEF;
             kcp->mss = kcp->mtu - OVERHEAD;
             kcp->stream = 0;
-            kcp->user = 0;
-            kcp->buffer = (byte*)ikcp_malloc((kcp->mtu + OVERHEAD) * 3);
-            if (kcp->buffer == null)
-            {
-                ikcp_free(kcp);
-                return null;
-            }
-
+            buffer = new byte[(kcp->mtu + OVERHEAD) * 3];
             iqueue_init(&kcp->snd_queue);
             iqueue_init(&kcp->rcv_queue);
             iqueue_init(&kcp->snd_buf);
@@ -244,8 +232,6 @@ namespace KCP
                     ikcp_segment_delete(kcp, seg);
                 }
 
-                if (kcp->buffer != null)
-                    ikcp_free(kcp->buffer);
                 if (kcp->acklist != null)
                     ikcp_free(kcp->acklist);
                 kcp->nrcv_buf = 0;
@@ -253,37 +239,15 @@ namespace KCP
                 kcp->nrcv_que = 0;
                 kcp->nsnd_que = 0;
                 kcp->ackcount = 0;
-                kcp->user = 0;
-                kcp->buffer = null;
                 kcp->acklist = null;
                 kcp->output = IntPtr.Zero;
                 ikcp_free(kcp);
             }
         }
 
-        public static void ikcp_resetoutput(IKCPCB* kcp)
-        {
-            kcp->user = 0;
-            kcp->output = IntPtr.Zero;
-        }
+        public static void ikcp_resetoutput(IKCPCB* kcp) => kcp->output = IntPtr.Zero;
 
-        public static void ikcp_setoutput(IKCPCB* kcp, KcpCallback output)
-        {
-            kcp->user = 1;
-            kcp->output = Unsafe.As<KcpCallback, nint>(ref output);
-        }
-
-        public static void ikcp_setoutput(IKCPCB* kcp, KcpRefCallback output)
-        {
-            kcp->user = 2;
-            kcp->output = Unsafe.As<KcpRefCallback, nint>(ref output);
-        }
-
-        public static void ikcp_setoutput(IKCPCB* kcp, KcpSpanCallback output)
-        {
-            kcp->user = 3;
-            kcp->output = Unsafe.As<KcpSpanCallback, nint>(ref output);
-        }
+        public static void ikcp_setoutput(IKCPCB* kcp, KcpCallback output) => kcp->output = Unsafe.As<KcpCallback, nint>(ref output);
 
         public static int ikcp_recv(IKCPCB* kcp, byte* buffer, int len)
         {
@@ -840,336 +804,338 @@ namespace KCP
 
         private static int ikcp_wnd_unused(IKCPCB* kcp) => kcp->nrcv_que < kcp->rcv_wnd ? (int)(kcp->rcv_wnd - kcp->nrcv_que) : 0;
 
-        public static void ikcp_flush(IKCPCB* kcp)
+        public static void ikcp_flush(IKCPCB* kcp, byte[] bytes)
         {
             if (kcp->updated == 0)
                 return;
-            ikcp_flush_internal(kcp);
+            ikcp_flush_internal(kcp, bytes);
         }
 
-        private static void ikcp_flush_internal(IKCPCB* kcp)
+        private static void ikcp_flush_internal(IKCPCB* kcp, byte[] bytes)
         {
             var current = kcp->current;
-            var buffer = kcp->buffer;
-            var ptr = buffer;
-            int size, i;
-            IQUEUEHEAD* p;
-            var change = 0;
-            var lost = 0;
-            IKCPSEG seg;
-            seg.conv = kcp->conv;
-            seg.cmd = CMD_ACK;
-            seg.frg = 0;
-            seg.wnd = (uint)ikcp_wnd_unused(kcp);
-            seg.una = kcp->rcv_nxt;
-            seg.len = 0;
-            seg.sn = 0;
-            seg.ts = 0;
-            var count = (int)kcp->ackcount;
-            for (i = 0; i < count; ++i)
+            fixed (byte* buffer = bytes)
             {
-                size = (int)(ptr - buffer);
-                if (size + (int)OVERHEAD > (int)kcp->mtu)
+                var ptr = buffer;
+                int size, i;
+                IQUEUEHEAD* p;
+                var change = 0;
+                var lost = 0;
+                IKCPSEG seg;
+                seg.conv = kcp->conv;
+                seg.cmd = CMD_ACK;
+                seg.frg = 0;
+                seg.wnd = (uint)ikcp_wnd_unused(kcp);
+                seg.una = kcp->rcv_nxt;
+                seg.len = 0;
+                seg.sn = 0;
+                seg.ts = 0;
+                var count = (int)kcp->ackcount;
+                for (i = 0; i < count; ++i)
                 {
-                    ikcp_output(kcp, buffer, size);
-                    ptr = buffer;
+                    size = (int)(ptr - buffer);
+                    if (size + (int)OVERHEAD > (int)kcp->mtu)
+                    {
+                        ikcp_output(kcp, bytes, size);
+                        ptr = buffer;
+                    }
+
+                    ikcp_ack_get(kcp, i, &seg.sn, &seg.ts);
+                    ptr = ikcp_encode_seg(ptr, &seg);
                 }
 
-                ikcp_ack_get(kcp, i, &seg.sn, &seg.ts);
-                ptr = ikcp_encode_seg(ptr, &seg);
-            }
-
-            kcp->ackcount = 0;
-            if (kcp->rmt_wnd == 0)
-            {
-                if (kcp->probe_wait == 0)
+                kcp->ackcount = 0;
+                if (kcp->rmt_wnd == 0)
                 {
-                    kcp->probe_wait = PROBE_INIT;
-                    kcp->ts_probe = kcp->current + kcp->probe_wait;
+                    if (kcp->probe_wait == 0)
+                    {
+                        kcp->probe_wait = PROBE_INIT;
+                        kcp->ts_probe = kcp->current + kcp->probe_wait;
+                    }
+                    else
+                    {
+                        if (_itimediff(kcp->current, kcp->ts_probe) >= 0)
+                        {
+                            if (kcp->probe_wait < PROBE_INIT)
+                                kcp->probe_wait = PROBE_INIT;
+                            kcp->probe_wait += kcp->probe_wait / 2;
+                            if (kcp->probe_wait > PROBE_LIMIT)
+                                kcp->probe_wait = PROBE_LIMIT;
+                            kcp->ts_probe = kcp->current + kcp->probe_wait;
+                            kcp->probe |= ASK_SEND;
+                        }
+                    }
                 }
                 else
                 {
-                    if (_itimediff(kcp->current, kcp->ts_probe) >= 0)
+                    kcp->ts_probe = 0;
+                    kcp->probe_wait = 0;
+                }
+
+                if ((kcp->probe != 0) & (ASK_SEND != 0))
+                {
+                    seg.cmd = CMD_WASK;
+                    size = (int)(ptr - buffer);
+                    if (size + (int)OVERHEAD > (int)kcp->mtu)
                     {
-                        if (kcp->probe_wait < PROBE_INIT)
-                            kcp->probe_wait = PROBE_INIT;
-                        kcp->probe_wait += kcp->probe_wait / 2;
-                        if (kcp->probe_wait > PROBE_LIMIT)
-                            kcp->probe_wait = PROBE_LIMIT;
-                        kcp->ts_probe = kcp->current + kcp->probe_wait;
-                        kcp->probe |= ASK_SEND;
+                        ikcp_output(kcp, bytes, size);
+                        ptr = buffer;
+                    }
+
+                    ptr = ikcp_encode_seg(ptr, &seg);
+                }
+
+                if ((kcp->probe != 0) & (ASK_TELL != 0))
+                {
+                    seg.cmd = CMD_WINS;
+                    size = (int)(ptr - buffer);
+                    if (size + (int)OVERHEAD > (int)kcp->mtu)
+                    {
+                        ikcp_output(kcp, bytes, size);
+                        ptr = buffer;
+                    }
+
+                    ptr = ikcp_encode_seg(ptr, &seg);
+                }
+
+                kcp->probe = 0;
+                var cwnd = _imin_(kcp->snd_wnd, kcp->rmt_wnd);
+                if (kcp->nocwnd == 0)
+                    cwnd = _imin_(kcp->cwnd, cwnd);
+                while (_itimediff(kcp->snd_nxt, kcp->snd_una + cwnd) < 0)
+                {
+                    if (iqueue_is_empty(&kcp->snd_queue))
+                        break;
+                    var newseg = iqueue_entry(kcp->snd_queue.next);
+                    iqueue_del(&newseg->node);
+                    iqueue_add_tail(&newseg->node, &kcp->snd_buf);
+                    kcp->nsnd_que--;
+                    kcp->nsnd_buf++;
+                    newseg->conv = kcp->conv;
+                    newseg->cmd = CMD_PUSH;
+                    newseg->wnd = seg.wnd;
+                    newseg->ts = current;
+                    newseg->sn = kcp->snd_nxt++;
+                    newseg->una = kcp->rcv_nxt;
+                    newseg->resendts = current;
+                    newseg->rto = (uint)kcp->rx_rto;
+                    newseg->fastack = 0;
+                    newseg->xmit = 0;
+                }
+
+                var resent = kcp->fastresend > 0 ? (uint)kcp->fastresend : 4294967295;
+                if (kcp->nodelay == 0)
+                {
+                    var rtomin = (uint)(kcp->rx_rto >> 3);
+                    for (p = kcp->snd_buf.next; p != &kcp->snd_buf; p = p->next)
+                    {
+                        var segment = iqueue_entry(p);
+                        var needsend = 0;
+                        if (segment->xmit == 0)
+                        {
+                            needsend = 1;
+                            segment->xmit++;
+                            segment->rto = (uint)kcp->rx_rto;
+                            segment->resendts = current + segment->rto + rtomin;
+                        }
+                        else if (_itimediff(current, segment->resendts) >= 0)
+                        {
+                            needsend = 1;
+                            segment->xmit++;
+                            kcp->xmit++;
+                            segment->rto += _imax_(segment->rto, (uint)kcp->rx_rto);
+                            segment->resendts = current + segment->rto;
+                            lost = 1;
+                        }
+                        else if (segment->fastack >= resent)
+                        {
+                            if ((int)segment->xmit <= kcp->fastlimit || kcp->fastlimit == 0)
+                            {
+                                needsend = 1;
+                                segment->xmit++;
+                                segment->fastack = 0;
+                                segment->resendts = current + segment->rto;
+                                change++;
+                            }
+                        }
+
+                        if (needsend != 0)
+                        {
+                            segment->ts = current;
+                            segment->wnd = seg.wnd;
+                            segment->una = kcp->rcv_nxt;
+                            size = (int)(ptr - buffer);
+                            var need = (int)(OVERHEAD + segment->len);
+                            if (size + need > (int)kcp->mtu)
+                            {
+                                ikcp_output(kcp, bytes, size);
+                                ptr = buffer;
+                            }
+
+                            ptr = ikcp_encode_seg(ptr, segment);
+                            if (segment->len > 0)
+                            {
+                                memcpy(ptr, segment->data, segment->len);
+                                ptr += segment->len;
+                            }
+
+                            if (segment->xmit >= DEADLINK)
+                                kcp->state = -1;
+                        }
                     }
                 }
-            }
-            else
-            {
-                kcp->ts_probe = 0;
-                kcp->probe_wait = 0;
-            }
+                else if (kcp->nodelay == 1)
+                {
+                    for (p = kcp->snd_buf.next; p != &kcp->snd_buf; p = p->next)
+                    {
+                        var segment = iqueue_entry(p);
+                        var needsend = 0;
+                        if (segment->xmit == 0)
+                        {
+                            needsend = 1;
+                            segment->xmit++;
+                            segment->rto = (uint)kcp->rx_rto;
+                            segment->resendts = current + segment->rto;
+                        }
+                        else if (_itimediff(current, segment->resendts) >= 0)
+                        {
+                            needsend = 1;
+                            segment->xmit++;
+                            kcp->xmit++;
+                            var step = (int)segment->rto;
+                            segment->rto += (uint)(step / 2);
+                            segment->resendts = current + segment->rto;
+                            lost = 1;
+                        }
+                        else if (segment->fastack >= resent)
+                        {
+                            if ((int)segment->xmit <= kcp->fastlimit || kcp->fastlimit == 0)
+                            {
+                                needsend = 1;
+                                segment->xmit++;
+                                segment->fastack = 0;
+                                segment->resendts = current + segment->rto;
+                                change++;
+                            }
+                        }
 
-            if ((kcp->probe != 0) & (ASK_SEND != 0))
-            {
-                seg.cmd = CMD_WASK;
+                        if (needsend != 0)
+                        {
+                            segment->ts = current;
+                            segment->wnd = seg.wnd;
+                            segment->una = kcp->rcv_nxt;
+                            size = (int)(ptr - buffer);
+                            var need = (int)(OVERHEAD + segment->len);
+                            if (size + need > (int)kcp->mtu)
+                            {
+                                ikcp_output(kcp, bytes, size);
+                                ptr = buffer;
+                            }
+
+                            ptr = ikcp_encode_seg(ptr, segment);
+                            if (segment->len > 0)
+                            {
+                                memcpy(ptr, segment->data, segment->len);
+                                ptr += segment->len;
+                            }
+
+                            if (segment->xmit >= DEADLINK)
+                                kcp->state = -1;
+                        }
+                    }
+                }
+                else
+                {
+                    for (p = kcp->snd_buf.next; p != &kcp->snd_buf; p = p->next)
+                    {
+                        var segment = iqueue_entry(p);
+                        var needsend = 0;
+                        if (segment->xmit == 0)
+                        {
+                            needsend = 1;
+                            segment->xmit++;
+                            segment->rto = (uint)kcp->rx_rto;
+                            segment->resendts = current + segment->rto;
+                        }
+                        else if (_itimediff(current, segment->resendts) >= 0)
+                        {
+                            needsend = 1;
+                            segment->xmit++;
+                            kcp->xmit++;
+                            var step = (int)segment->rto;
+                            segment->rto += (uint)(step / 2);
+                            segment->resendts = current + segment->rto;
+                            lost = 1;
+                        }
+                        else if (segment->fastack >= resent)
+                        {
+                            if ((int)segment->xmit <= kcp->fastlimit || kcp->fastlimit == 0)
+                            {
+                                needsend = 1;
+                                segment->xmit++;
+                                segment->fastack = 0;
+                                segment->resendts = current + segment->rto;
+                                change++;
+                            }
+                        }
+
+                        if (needsend != 0)
+                        {
+                            segment->ts = current;
+                            segment->wnd = seg.wnd;
+                            segment->una = kcp->rcv_nxt;
+                            size = (int)(ptr - buffer);
+                            var need = (int)(OVERHEAD + segment->len);
+                            if (size + need > (int)kcp->mtu)
+                            {
+                                ikcp_output(kcp, bytes, size);
+                                ptr = buffer;
+                            }
+
+                            ptr = ikcp_encode_seg(ptr, segment);
+                            if (segment->len > 0)
+                            {
+                                memcpy(ptr, segment->data, segment->len);
+                                ptr += segment->len;
+                            }
+
+                            if (segment->xmit >= DEADLINK)
+                                kcp->state = -1;
+                        }
+                    }
+                }
+
                 size = (int)(ptr - buffer);
-                if (size + (int)OVERHEAD > (int)kcp->mtu)
+                if (size > 0)
+                    ikcp_output(kcp, bytes, size);
+                if (change != 0)
                 {
-                    ikcp_output(kcp, buffer, size);
-                    ptr = buffer;
+                    var inflight = kcp->snd_nxt - kcp->snd_una;
+                    kcp->ssthresh = inflight / 2;
+                    if (kcp->ssthresh < THRESH_MIN)
+                        kcp->ssthresh = THRESH_MIN;
+                    kcp->cwnd = kcp->ssthresh + resent;
+                    kcp->incr = kcp->cwnd * kcp->mss;
                 }
 
-                ptr = ikcp_encode_seg(ptr, &seg);
-            }
-
-            if ((kcp->probe != 0) & (ASK_TELL != 0))
-            {
-                seg.cmd = CMD_WINS;
-                size = (int)(ptr - buffer);
-                if (size + (int)OVERHEAD > (int)kcp->mtu)
+                if (lost != 0)
                 {
-                    ikcp_output(kcp, buffer, size);
-                    ptr = buffer;
+                    kcp->ssthresh = cwnd / 2;
+                    if (kcp->ssthresh < THRESH_MIN)
+                        kcp->ssthresh = THRESH_MIN;
+                    kcp->cwnd = 1;
+                    kcp->incr = kcp->mss;
                 }
 
-                ptr = ikcp_encode_seg(ptr, &seg);
-            }
-
-            kcp->probe = 0;
-            var cwnd = _imin_(kcp->snd_wnd, kcp->rmt_wnd);
-            if (kcp->nocwnd == 0)
-                cwnd = _imin_(kcp->cwnd, cwnd);
-            while (_itimediff(kcp->snd_nxt, kcp->snd_una + cwnd) < 0)
-            {
-                if (iqueue_is_empty(&kcp->snd_queue))
-                    break;
-                var newseg = iqueue_entry(kcp->snd_queue.next);
-                iqueue_del(&newseg->node);
-                iqueue_add_tail(&newseg->node, &kcp->snd_buf);
-                kcp->nsnd_que--;
-                kcp->nsnd_buf++;
-                newseg->conv = kcp->conv;
-                newseg->cmd = CMD_PUSH;
-                newseg->wnd = seg.wnd;
-                newseg->ts = current;
-                newseg->sn = kcp->snd_nxt++;
-                newseg->una = kcp->rcv_nxt;
-                newseg->resendts = current;
-                newseg->rto = (uint)kcp->rx_rto;
-                newseg->fastack = 0;
-                newseg->xmit = 0;
-            }
-
-            var resent = kcp->fastresend > 0 ? (uint)kcp->fastresend : 4294967295;
-            if (kcp->nodelay == 0)
-            {
-                var rtomin = (uint)(kcp->rx_rto >> 3);
-                for (p = kcp->snd_buf.next; p != &kcp->snd_buf; p = p->next)
+                if (kcp->cwnd < 1)
                 {
-                    var segment = iqueue_entry(p);
-                    var needsend = 0;
-                    if (segment->xmit == 0)
-                    {
-                        needsend = 1;
-                        segment->xmit++;
-                        segment->rto = (uint)kcp->rx_rto;
-                        segment->resendts = current + segment->rto + rtomin;
-                    }
-                    else if (_itimediff(current, segment->resendts) >= 0)
-                    {
-                        needsend = 1;
-                        segment->xmit++;
-                        kcp->xmit++;
-                        segment->rto += _imax_(segment->rto, (uint)kcp->rx_rto);
-                        segment->resendts = current + segment->rto;
-                        lost = 1;
-                    }
-                    else if (segment->fastack >= resent)
-                    {
-                        if ((int)segment->xmit <= kcp->fastlimit || kcp->fastlimit == 0)
-                        {
-                            needsend = 1;
-                            segment->xmit++;
-                            segment->fastack = 0;
-                            segment->resendts = current + segment->rto;
-                            change++;
-                        }
-                    }
-
-                    if (needsend != 0)
-                    {
-                        segment->ts = current;
-                        segment->wnd = seg.wnd;
-                        segment->una = kcp->rcv_nxt;
-                        size = (int)(ptr - buffer);
-                        var need = (int)(OVERHEAD + segment->len);
-                        if (size + need > (int)kcp->mtu)
-                        {
-                            ikcp_output(kcp, buffer, size);
-                            ptr = buffer;
-                        }
-
-                        ptr = ikcp_encode_seg(ptr, segment);
-                        if (segment->len > 0)
-                        {
-                            memcpy(ptr, segment->data, segment->len);
-                            ptr += segment->len;
-                        }
-
-                        if (segment->xmit >= DEADLINK)
-                            kcp->state = -1;
-                    }
+                    kcp->cwnd = 1;
+                    kcp->incr = kcp->mss;
                 }
-            }
-            else if (kcp->nodelay == 1)
-            {
-                for (p = kcp->snd_buf.next; p != &kcp->snd_buf; p = p->next)
-                {
-                    var segment = iqueue_entry(p);
-                    var needsend = 0;
-                    if (segment->xmit == 0)
-                    {
-                        needsend = 1;
-                        segment->xmit++;
-                        segment->rto = (uint)kcp->rx_rto;
-                        segment->resendts = current + segment->rto;
-                    }
-                    else if (_itimediff(current, segment->resendts) >= 0)
-                    {
-                        needsend = 1;
-                        segment->xmit++;
-                        kcp->xmit++;
-                        var step = (int)segment->rto;
-                        segment->rto += (uint)(step / 2);
-                        segment->resendts = current + segment->rto;
-                        lost = 1;
-                    }
-                    else if (segment->fastack >= resent)
-                    {
-                        if ((int)segment->xmit <= kcp->fastlimit || kcp->fastlimit == 0)
-                        {
-                            needsend = 1;
-                            segment->xmit++;
-                            segment->fastack = 0;
-                            segment->resendts = current + segment->rto;
-                            change++;
-                        }
-                    }
-
-                    if (needsend != 0)
-                    {
-                        segment->ts = current;
-                        segment->wnd = seg.wnd;
-                        segment->una = kcp->rcv_nxt;
-                        size = (int)(ptr - buffer);
-                        var need = (int)(OVERHEAD + segment->len);
-                        if (size + need > (int)kcp->mtu)
-                        {
-                            ikcp_output(kcp, buffer, size);
-                            ptr = buffer;
-                        }
-
-                        ptr = ikcp_encode_seg(ptr, segment);
-                        if (segment->len > 0)
-                        {
-                            memcpy(ptr, segment->data, segment->len);
-                            ptr += segment->len;
-                        }
-
-                        if (segment->xmit >= DEADLINK)
-                            kcp->state = -1;
-                    }
-                }
-            }
-            else
-            {
-                for (p = kcp->snd_buf.next; p != &kcp->snd_buf; p = p->next)
-                {
-                    var segment = iqueue_entry(p);
-                    var needsend = 0;
-                    if (segment->xmit == 0)
-                    {
-                        needsend = 1;
-                        segment->xmit++;
-                        segment->rto = (uint)kcp->rx_rto;
-                        segment->resendts = current + segment->rto;
-                    }
-                    else if (_itimediff(current, segment->resendts) >= 0)
-                    {
-                        needsend = 1;
-                        segment->xmit++;
-                        kcp->xmit++;
-                        var step = (int)segment->rto;
-                        segment->rto += (uint)(step / 2);
-                        segment->resendts = current + segment->rto;
-                        lost = 1;
-                    }
-                    else if (segment->fastack >= resent)
-                    {
-                        if ((int)segment->xmit <= kcp->fastlimit || kcp->fastlimit == 0)
-                        {
-                            needsend = 1;
-                            segment->xmit++;
-                            segment->fastack = 0;
-                            segment->resendts = current + segment->rto;
-                            change++;
-                        }
-                    }
-
-                    if (needsend != 0)
-                    {
-                        segment->ts = current;
-                        segment->wnd = seg.wnd;
-                        segment->una = kcp->rcv_nxt;
-                        size = (int)(ptr - buffer);
-                        var need = (int)(OVERHEAD + segment->len);
-                        if (size + need > (int)kcp->mtu)
-                        {
-                            ikcp_output(kcp, buffer, size);
-                            ptr = buffer;
-                        }
-
-                        ptr = ikcp_encode_seg(ptr, segment);
-                        if (segment->len > 0)
-                        {
-                            memcpy(ptr, segment->data, segment->len);
-                            ptr += segment->len;
-                        }
-
-                        if (segment->xmit >= DEADLINK)
-                            kcp->state = -1;
-                    }
-                }
-            }
-
-            size = (int)(ptr - buffer);
-            if (size > 0)
-                ikcp_output(kcp, buffer, size);
-            if (change != 0)
-            {
-                var inflight = kcp->snd_nxt - kcp->snd_una;
-                kcp->ssthresh = inflight / 2;
-                if (kcp->ssthresh < THRESH_MIN)
-                    kcp->ssthresh = THRESH_MIN;
-                kcp->cwnd = kcp->ssthresh + resent;
-                kcp->incr = kcp->cwnd * kcp->mss;
-            }
-
-            if (lost != 0)
-            {
-                kcp->ssthresh = cwnd / 2;
-                if (kcp->ssthresh < THRESH_MIN)
-                    kcp->ssthresh = THRESH_MIN;
-                kcp->cwnd = 1;
-                kcp->incr = kcp->mss;
-            }
-
-            if (kcp->cwnd < 1)
-            {
-                kcp->cwnd = 1;
-                kcp->incr = kcp->mss;
             }
         }
 
-        public static void ikcp_update(IKCPCB* kcp, uint current)
+        public static void ikcp_update(IKCPCB* kcp, uint current, byte[] bytes)
         {
             kcp->current = current;
             if (kcp->updated == 0)
@@ -1190,7 +1156,7 @@ namespace KCP
                 kcp->ts_flush += kcp->interval;
                 if (_itimediff(kcp->current, kcp->ts_flush) >= 0)
                     kcp->ts_flush = kcp->current + kcp->interval;
-                ikcp_flush_internal(kcp);
+                ikcp_flush_internal(kcp, bytes);
             }
         }
 
@@ -1222,19 +1188,15 @@ namespace KCP
             return current + minimal;
         }
 
-        public static int ikcp_setmtu(IKCPCB* kcp, int mtu)
+        public static int ikcp_setmtu(IKCPCB* kcp, int mtu, ref byte[] buffer)
         {
             if (kcp->mtu == (uint)mtu)
                 return 0;
             if (mtu < (int)OVERHEAD)
                 return -1;
-            var buffer = (byte*)ikcp_malloc((nuint)((mtu + OVERHEAD) * 3));
-            if (buffer == null)
-                return -2;
+            buffer = new byte[(mtu + OVERHEAD) * 3];
             kcp->mtu = (uint)mtu;
             kcp->mss = kcp->mtu - OVERHEAD;
-            ikcp_free(kcp->buffer);
-            kcp->buffer = buffer;
             return 0;
         }
 

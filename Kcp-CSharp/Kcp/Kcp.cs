@@ -4,6 +4,7 @@ using System.Threading;
 #endif
 using static KCP.IKCP;
 
+#pragma warning disable CS8601
 #pragma warning disable CS8602
 #pragma warning disable CS8625
 
@@ -22,6 +23,11 @@ namespace KCP
         ///     Kcp
         /// </summary>
         private IKCPCB* _kcp;
+
+        /// <summary>
+        ///     Buffer
+        /// </summary>
+        private byte[] _buffer;
 
         /// <summary>
         ///     Output function
@@ -48,47 +54,7 @@ namespace KCP
         /// <param name="output">Output</param>
         public Kcp(uint conv, KcpCallback output)
         {
-            _kcp = ikcp_create(conv);
-            _output = output;
-            ikcp_setoutput(_kcp, output);
-        }
-
-        /// <summary>
-        ///     Structure
-        /// </summary>
-        /// <param name="output">Output</param>
-        public Kcp(KcpRefCallback output) : this(0, output)
-        {
-        }
-
-        /// <summary>
-        ///     Structure
-        /// </summary>
-        /// <param name="conv">ConversationId</param>
-        /// <param name="output">Output</param>
-        public Kcp(uint conv, KcpRefCallback output)
-        {
-            _kcp = ikcp_create(conv);
-            _output = output;
-            ikcp_setoutput(_kcp, output);
-        }
-
-        /// <summary>
-        ///     Structure
-        /// </summary>
-        /// <param name="output">Output</param>
-        public Kcp(KcpSpanCallback output) : this(0, output)
-        {
-        }
-
-        /// <summary>
-        ///     Structure
-        /// </summary>
-        /// <param name="conv">ConversationId</param>
-        /// <param name="output">Output</param>
-        public Kcp(uint conv, KcpSpanCallback output)
-        {
-            _kcp = ikcp_create(conv);
+            _kcp = ikcp_create(conv, ref _buffer);
             _output = output;
             ikcp_setoutput(_kcp, output);
         }
@@ -274,14 +240,9 @@ namespace KCP
         public uint AckBlock => _kcp->ackblock;
 
         /// <summary>
-        ///     User
+        ///     Buffer
         /// </summary>
-        public uint User => _kcp->user;
-
-        /// <summary>
-        ///     Pointer to the buffer
-        /// </summary>
-        public byte* Buffer => _kcp->buffer;
+        public byte[] Buffer => _buffer;
 
         /// <summary>
         ///     Fast resend trigger count
@@ -326,30 +287,6 @@ namespace KCP
         /// </summary>
         /// <param name="output">Output</param>
         public void SetOutput(KcpCallback output)
-        {
-            ikcp_resetoutput(_kcp);
-            _output = null;
-            _output = output;
-            ikcp_setoutput(_kcp, output);
-        }
-
-        /// <summary>
-        ///     Set output
-        /// </summary>
-        /// <param name="output">Output</param>
-        public void SetOutput(KcpRefCallback output)
-        {
-            ikcp_resetoutput(_kcp);
-            _output = null;
-            _output = output;
-            ikcp_setoutput(_kcp, output);
-        }
-
-        /// <summary>
-        ///     Set output
-        /// </summary>
-        /// <param name="output">Output</param>
-        public void SetOutput(KcpSpanCallback output)
         {
             ikcp_resetoutput(_kcp);
             _output = null;
@@ -630,7 +567,7 @@ namespace KCP
         ///     Update
         /// </summary>
         /// <param name="current">Timestamp</param>
-        public void Update(uint current) => ikcp_update(_kcp, current);
+        public void Update(uint current) => ikcp_update(_kcp, current, _buffer);
 
         /// <summary>
         ///     Check
@@ -642,14 +579,14 @@ namespace KCP
         /// <summary>
         ///     Flush
         /// </summary>
-        public void Flush() => ikcp_flush(_kcp);
+        public void Flush() => ikcp_flush(_kcp, _buffer);
 
         /// <summary>
         ///     Set maximum transmission unit
         /// </summary>
         /// <param name="mtu">Maximum transmission unit</param>
         /// <returns>Set</returns>
-        public int SetMtu(int mtu) => ikcp_setmtu(_kcp, mtu);
+        public int SetMtu(int mtu) => ikcp_setmtu(_kcp, mtu, ref _buffer);
 
         /// <summary>
         ///     Set flush interval

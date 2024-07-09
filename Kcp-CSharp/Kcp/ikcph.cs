@@ -1,9 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#if UNITY_2021_3_OR_NEWER || GODOT
-using System;
-#endif
 
+#pragma warning disable CS1591
 #pragma warning disable CS8981
 
 // ReSharper disable IdentifierTypo
@@ -11,11 +9,7 @@ using System;
 
 namespace KCP
 {
-    public unsafe delegate void KcpCallback(byte* buffer, int length);
-
-    public delegate void KcpRefCallback(ref byte buffer, int length);
-
-    public delegate void KcpSpanCallback(Span<byte> buffer);
+    public delegate void KcpCallback(byte[] buffer, int length);
 
     internal unsafe struct IQUEUEHEAD
     {
@@ -111,8 +105,6 @@ namespace KCP
         public uint* acklist;
         public uint ackcount;
         public uint ackblock;
-        public uint user;
-        public byte* buffer;
         public int fastresend;
         public int fastlimit;
         public int nocwnd, stream;
