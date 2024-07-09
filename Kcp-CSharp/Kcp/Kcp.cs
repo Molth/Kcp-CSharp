@@ -2,6 +2,7 @@
 using System;
 using System.Threading;
 #endif
+using System.Runtime.InteropServices;
 using static KCP.IKCP;
 
 #pragma warning disable CS8601
@@ -30,11 +31,6 @@ namespace KCP
         private byte[] _buffer;
 
         /// <summary>
-        ///     Output function
-        /// </summary>
-        private Delegate _output;
-
-        /// <summary>
         ///     Disposed
         /// </summary>
         private int _disposed;
@@ -55,7 +51,6 @@ namespace KCP
         public Kcp(uint conv, KcpCallback output)
         {
             _kcp = ikcp_create(conv, ref _buffer);
-            _output = output;
             ikcp_setoutput(_kcp, output);
         }
 
@@ -267,7 +262,7 @@ namespace KCP
         /// <summary>
         ///     Output function pointer
         /// </summary>
-        public nint Output => _kcp->output;
+        public GCHandle Output => _kcp->output;
 
         /// <summary>
         ///     Dispose
@@ -278,7 +273,6 @@ namespace KCP
                 return;
             ikcp_release(_kcp);
             _kcp = null;
-            _output = null;
             GC.SuppressFinalize(this);
         }
 
@@ -289,8 +283,6 @@ namespace KCP
         public void SetOutput(KcpCallback output)
         {
             ikcp_resetoutput(_kcp);
-            _output = null;
-            _output = output;
             ikcp_setoutput(_kcp, output);
         }
 

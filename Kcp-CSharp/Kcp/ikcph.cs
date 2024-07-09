@@ -108,7 +108,7 @@ namespace KCP
         public int fastresend;
         public int fastlimit;
         public int nocwnd, stream;
-        public nint output;
+        public GCHandle output;
     }
 
     public static class KCPBASIC
@@ -153,5 +153,6 @@ namespace KCP
         public const uint OUT_ACK = 512;
         public const uint OUT_PROBE = 1024;
         public const uint OUT_WINS = 2048;
+        public const uint REVERSED_HEAD = 5;
     }
 }

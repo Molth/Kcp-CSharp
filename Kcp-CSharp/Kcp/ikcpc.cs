@@ -145,7 +145,7 @@ namespace KCP
         {
             if (size == 0)
                 return;
-            Unsafe.As<nint, KcpCallback>(ref kcp->output)(data, size);
+            ((KcpCallback)kcp->output.Target)(data, size);
         }
 
         public static IKCPCB* ikcp_create(uint conv, ref byte[] buffer)
@@ -195,7 +195,7 @@ namespace KCP
             kcp->fastlimit = (int)FASTACK_LIMIT;
             kcp->nocwnd = 0;
             kcp->xmit = 0;
-            kcp->output = IntPtr.Zero;
+            kcp->output = new GCHandle();
             return kcp;
         }
 
@@ -240,14 +240,14 @@ namespace KCP
                 kcp->nsnd_que = 0;
                 kcp->ackcount = 0;
                 kcp->acklist = null;
-                kcp->output = IntPtr.Zero;
+                kcp->output.Free();
                 ikcp_free(kcp);
             }
         }
 
-        public static void ikcp_resetoutput(IKCPCB* kcp) => kcp->output = IntPtr.Zero;
+        public static void ikcp_resetoutput(IKCPCB* kcp) => kcp->output.Free();
 
-        public static void ikcp_setoutput(IKCPCB* kcp, KcpCallback output) => kcp->output = Unsafe.As<KcpCallback, nint>(ref output);
+        public static void ikcp_setoutput(IKCPCB* kcp, KcpCallback output) => kcp->output = GCHandle.Alloc(output);
 
         public static int ikcp_recv(IKCPCB* kcp, byte* buffer, int len)
         {
@@ -814,7 +814,7 @@ namespace KCP
         private static void ikcp_flush_internal(IKCPCB* kcp, byte[] bytes)
         {
             var current = kcp->current;
-            fixed (byte* buffer = bytes)
+            fixed (byte* buffer = &bytes[REVERSED_HEAD])
             {
                 var ptr = buffer;
                 int size, i;
