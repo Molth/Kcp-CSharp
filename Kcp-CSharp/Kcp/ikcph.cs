@@ -108,7 +108,6 @@ namespace KCP
         public int fastresend;
         public int fastlimit;
         public int nocwnd, stream;
-        public GCHandle output;
     }
 
     public static class KCPBASIC

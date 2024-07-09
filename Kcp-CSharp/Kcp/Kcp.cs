@@ -2,7 +2,6 @@
 using System;
 using System.Threading;
 #endif
-using System.Runtime.InteropServices;
 using static KCP.IKCP;
 
 #pragma warning disable CS8601
@@ -24,6 +23,11 @@ namespace KCP
         ///     Kcp
         /// </summary>
         private IKCPCB* _kcp;
+
+        /// <summary>
+        ///     Output function pointer
+        /// </summary>
+        private KcpCallback _output;
 
         /// <summary>
         ///     Buffer
@@ -51,7 +55,7 @@ namespace KCP
         public Kcp(uint conv, KcpCallback output)
         {
             _kcp = ikcp_create(conv, ref _buffer);
-            ikcp_setoutput(_kcp, output);
+            _output = output;
         }
 
         /// <summary>
@@ -260,11 +264,6 @@ namespace KCP
         public int StreamMode => _kcp->stream;
 
         /// <summary>
-        ///     Output function pointer
-        /// </summary>
-        public GCHandle Output => _kcp->output;
-
-        /// <summary>
         ///     Dispose
         /// </summary>
         public void Dispose()
@@ -280,11 +279,7 @@ namespace KCP
         ///     Set output
         /// </summary>
         /// <param name="output">Output</param>
-        public void SetOutput(KcpCallback output)
-        {
-            ikcp_resetoutput(_kcp);
-            ikcp_setoutput(_kcp, output);
-        }
+        public void SetOutput(KcpCallback output) => _output = output;
 
         /// <summary>
         ///     Destructure
@@ -559,7 +554,7 @@ namespace KCP
         ///     Update
         /// </summary>
         /// <param name="current">Timestamp</param>
-        public void Update(uint current) => ikcp_update(_kcp, current, _buffer);
+        public void Update(uint current) => ikcp_update(_kcp, current, _output, _buffer);
 
         /// <summary>
         ///     Check
@@ -571,7 +566,7 @@ namespace KCP
         /// <summary>
         ///     Flush
         /// </summary>
-        public void Flush() => ikcp_flush(_kcp, _buffer);
+        public void Flush() => ikcp_flush(_kcp, _output, _buffer);
 
         /// <summary>
         ///     Set maximum transmission unit
