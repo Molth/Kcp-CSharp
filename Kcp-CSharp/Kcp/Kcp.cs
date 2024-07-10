@@ -272,6 +272,7 @@ namespace KCP
                 return;
             ikcp_release(_kcp);
             _kcp = null;
+            _output = null;
             GC.SuppressFinalize(this);
         }
 
