@@ -280,7 +280,7 @@ namespace KCP
         ///     Set output
         /// </summary>
         /// <param name="output">Output</param>
-        public void Set9Output(KcpCallback output) => _output = output;
+        public void SetOutput(KcpCallback output) => _output = output;
 
         /// <summary>
         ///     Destructure
