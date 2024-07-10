@@ -11,6 +11,7 @@ using static KCP.IKCP;
 // ReSharper disable IdentifierTypo
 // ReSharper disable GrammarMistakeInComment
 // ReSharper disable PossibleNullReferenceException
+// ReSharper disable ConvertToAutoPropertyWithPrivateSetter
 
 namespace KCP
 {
@@ -25,7 +26,7 @@ namespace KCP
         private IKCPCB* _kcp;
 
         /// <summary>
-        ///     Output function pointer
+        ///     Output function
         /// </summary>
         private KcpCallback _output;
 
@@ -262,6 +263,11 @@ namespace KCP
         ///     Whether stream mode is enabled
         /// </summary>
         public int StreamMode => _kcp->stream;
+
+        /// <summary>
+        ///     Output function pointer
+        /// </summary>
+        public KcpCallback Output => _output;
 
         /// <summary>
         ///     Dispose
