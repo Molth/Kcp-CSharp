@@ -168,7 +168,7 @@ namespace KCP
             kcp->mtu = MTU_DEF;
             kcp->mss = kcp->mtu - OVERHEAD;
             kcp->stream = 0;
-            buffer = new byte[(kcp->mtu + OVERHEAD) * 3];
+            buffer = new byte[REVERSED_HEAD + (kcp->mtu + OVERHEAD) * 3];
             iqueue_init(&kcp->snd_queue);
             iqueue_init(&kcp->rcv_queue);
             iqueue_init(&kcp->snd_buf);
@@ -1188,7 +1188,7 @@ namespace KCP
                 return 0;
             if (mtu < (int)OVERHEAD)
                 return -1;
-            buffer = new byte[(mtu + OVERHEAD) * 3];
+            buffer = new byte[REVERSED_HEAD + (mtu + OVERHEAD) * 3];
             kcp->mtu = (uint)mtu;
             kcp->mss = kcp->mtu - OVERHEAD;
             return 0;
