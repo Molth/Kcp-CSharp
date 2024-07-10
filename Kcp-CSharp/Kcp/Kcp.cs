@@ -2,7 +2,6 @@
 using System;
 using System.Threading;
 #endif
-using System.Runtime.InteropServices;
 using static KCP.IKCP;
 
 #pragma warning disable CS8602
@@ -11,6 +10,7 @@ using static KCP.IKCP;
 // ReSharper disable IdentifierTypo
 // ReSharper disable GrammarMistakeInComment
 // ReSharper disable PossibleNullReferenceException
+// ReSharper disable ConvertToAutoPropertyWithPrivateSetter
 
 namespace KCP
 {
@@ -23,6 +23,11 @@ namespace KCP
         ///     Kcp
         /// </summary>
         private IKCPCB* _kcp;
+
+        /// <summary>
+        ///     Output function
+        /// </summary>
+        private KcpCallback _output;
 
         /// <summary>
         ///     Disposed
@@ -45,45 +50,7 @@ namespace KCP
         public Kcp(uint conv, KcpCallback output)
         {
             _kcp = ikcp_create(conv);
-            ikcp_setoutput(_kcp, output);
-        }
-
-        /// <summary>
-        ///     Structure
-        /// </summary>
-        /// <param name="output">Output</param>
-        public Kcp(KcpRefCallback output) : this(0, output)
-        {
-        }
-
-        /// <summary>
-        ///     Structure
-        /// </summary>
-        /// <param name="conv">ConversationId</param>
-        /// <param name="output">Output</param>
-        public Kcp(uint conv, KcpRefCallback output)
-        {
-            _kcp = ikcp_create(conv);
-            ikcp_setoutput(_kcp, output);
-        }
-
-        /// <summary>
-        ///     Structure
-        /// </summary>
-        /// <param name="output">Output</param>
-        public Kcp(KcpSpanCallback output) : this(0, output)
-        {
-        }
-
-        /// <summary>
-        ///     Structure
-        /// </summary>
-        /// <param name="conv">ConversationId</param>
-        /// <param name="output">Output</param>
-        public Kcp(uint conv, KcpSpanCallback output)
-        {
-            _kcp = ikcp_create(conv);
-            ikcp_setoutput(_kcp, output);
+            _output = output;
         }
 
         /// <summary>
@@ -267,11 +234,6 @@ namespace KCP
         public uint AckBlock => _kcp->ackblock;
 
         /// <summary>
-        ///     User
-        /// </summary>
-        public uint User => _kcp->user;
-
-        /// <summary>
         ///     Pointer to the buffer
         /// </summary>
         public byte* Buffer => _kcp->buffer;
@@ -299,7 +261,7 @@ namespace KCP
         /// <summary>
         ///     Output function pointer
         /// </summary>
-        public GCHandle Output => _kcp->output;
+        public KcpCallback Output => _output;
 
         /// <summary>
         ///     Dispose
@@ -317,31 +279,7 @@ namespace KCP
         ///     Set output
         /// </summary>
         /// <param name="output">Output</param>
-        public void SetOutput(KcpCallback output)
-        {
-            ikcp_resetoutput(_kcp);
-            ikcp_setoutput(_kcp, output);
-        }
-
-        /// <summary>
-        ///     Set output
-        /// </summary>
-        /// <param name="output">Output</param>
-        public void SetOutput(KcpRefCallback output)
-        {
-            ikcp_resetoutput(_kcp);
-            ikcp_setoutput(_kcp, output);
-        }
-
-        /// <summary>
-        ///     Set output
-        /// </summary>
-        /// <param name="output">Output</param>
-        public void SetOutput(KcpSpanCallback output)
-        {
-            ikcp_resetoutput(_kcp);
-            ikcp_setoutput(_kcp, output);
-        }
+        public void Set9Output(KcpCallback output) => _output = output;
 
         /// <summary>
         ///     Destructure
@@ -616,7 +554,7 @@ namespace KCP
         ///     Update
         /// </summary>
         /// <param name="current">Timestamp</param>
-        public void Update(uint current) => ikcp_update(_kcp, current);
+        public void Update(uint current) => ikcp_update(_kcp, current, _output);
 
         /// <summary>
         ///     Check
@@ -628,7 +566,7 @@ namespace KCP
         /// <summary>
         ///     Flush
         /// </summary>
-        public void Flush() => ikcp_flush(_kcp);
+        public void Flush() => ikcp_flush(_kcp, _output);
 
         /// <summary>
         ///     Set maximum transmission unit

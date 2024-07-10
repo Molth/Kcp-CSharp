@@ -141,16 +141,11 @@ namespace KCP
 
         private static void ikcp_segment_delete(IKCPCB* kcp, IKCPSEG* seg) => ikcp_free(seg);
 
-        private static void ikcp_output(IKCPCB* kcp, void* data, int size)
+        private static void ikcp_output(KcpCallback output, void* data, int size)
         {
-            if (size == 0 || kcp->user == 0)
+            if (size == 0)
                 return;
-            if (kcp->user == 1)
-                ((KcpCallback)kcp->output.Target)((byte*)data, size);
-            else if (kcp->user == 2)
-                ((KcpRefCallback)kcp->output.Target)(ref *(byte*)data, size);
-            else if (kcp->user == 3)
-                ((KcpSpanCallback)kcp->output.Target)(new Span<byte>((byte*)data, size));
+            output((byte*)data, size);
         }
 
         public static IKCPCB* ikcp_create(uint conv)
@@ -173,7 +168,6 @@ namespace KCP
             kcp->mtu = MTU_DEF;
             kcp->mss = kcp->mtu - OVERHEAD;
             kcp->stream = 0;
-            kcp->user = 0;
             kcp->buffer = (byte*)ikcp_malloc((kcp->mtu + OVERHEAD) * 3);
             if (kcp->buffer == null)
             {
@@ -207,7 +201,6 @@ namespace KCP
             kcp->fastlimit = (int)FASTACK_LIMIT;
             kcp->nocwnd = 0;
             kcp->xmit = 0;
-            kcp->output = new GCHandle();
             return kcp;
         }
 
@@ -253,36 +246,10 @@ namespace KCP
                 kcp->nrcv_que = 0;
                 kcp->nsnd_que = 0;
                 kcp->ackcount = 0;
-                kcp->user = 0;
                 kcp->buffer = null;
                 kcp->acklist = null;
-                kcp->output.Free();
                 ikcp_free(kcp);
             }
-        }
-
-        public static void ikcp_resetoutput(IKCPCB* kcp)
-        {
-            kcp->user = 0;
-            kcp->output.Free();
-        }
-
-        public static void ikcp_setoutput(IKCPCB* kcp, KcpCallback output)
-        {
-            kcp->user = 1;
-            kcp->output = GCHandle.Alloc(output);
-        }
-
-        public static void ikcp_setoutput(IKCPCB* kcp, KcpRefCallback output)
-        {
-            kcp->user = 2;
-            kcp->output = GCHandle.Alloc(output);
-        }
-
-        public static void ikcp_setoutput(IKCPCB* kcp, KcpSpanCallback output)
-        {
-            kcp->user = 3;
-            kcp->output = GCHandle.Alloc(output);
         }
 
         public static int ikcp_recv(IKCPCB* kcp, byte* buffer, int len)
@@ -840,14 +807,14 @@ namespace KCP
 
         private static int ikcp_wnd_unused(IKCPCB* kcp) => kcp->nrcv_que < kcp->rcv_wnd ? (int)(kcp->rcv_wnd - kcp->nrcv_que) : 0;
 
-        public static void ikcp_flush(IKCPCB* kcp)
+        public static void ikcp_flush(IKCPCB* kcp, KcpCallback output)
         {
             if (kcp->updated == 0)
                 return;
-            ikcp_flush_internal(kcp);
+            ikcp_flush_internal(kcp, output);
         }
 
-        private static void ikcp_flush_internal(IKCPCB* kcp)
+        private static void ikcp_flush_internal(IKCPCB* kcp, KcpCallback output)
         {
             var current = kcp->current;
             var buffer = kcp->buffer;
@@ -871,7 +838,7 @@ namespace KCP
                 size = (int)(ptr - buffer);
                 if (size + (int)OVERHEAD > (int)kcp->mtu)
                 {
-                    ikcp_output(kcp, buffer, size);
+                    ikcp_output(output, buffer, size);
                     ptr = buffer;
                 }
 
@@ -913,7 +880,7 @@ namespace KCP
                 size = (int)(ptr - buffer);
                 if (size + (int)OVERHEAD > (int)kcp->mtu)
                 {
-                    ikcp_output(kcp, buffer, size);
+                    ikcp_output(output, buffer, size);
                     ptr = buffer;
                 }
 
@@ -926,7 +893,7 @@ namespace KCP
                 size = (int)(ptr - buffer);
                 if (size + (int)OVERHEAD > (int)kcp->mtu)
                 {
-                    ikcp_output(kcp, buffer, size);
+                    ikcp_output(output, buffer, size);
                     ptr = buffer;
                 }
 
@@ -1003,7 +970,7 @@ namespace KCP
                         var need = (int)(OVERHEAD + segment->len);
                         if (size + need > (int)kcp->mtu)
                         {
-                            ikcp_output(kcp, buffer, size);
+                            ikcp_output(output, buffer, size);
                             ptr = buffer;
                         }
 
@@ -1063,7 +1030,7 @@ namespace KCP
                         var need = (int)(OVERHEAD + segment->len);
                         if (size + need > (int)kcp->mtu)
                         {
-                            ikcp_output(kcp, buffer, size);
+                            ikcp_output(output, buffer, size);
                             ptr = buffer;
                         }
 
@@ -1123,7 +1090,7 @@ namespace KCP
                         var need = (int)(OVERHEAD + segment->len);
                         if (size + need > (int)kcp->mtu)
                         {
-                            ikcp_output(kcp, buffer, size);
+                            ikcp_output(output, buffer, size);
                             ptr = buffer;
                         }
 
@@ -1142,7 +1109,7 @@ namespace KCP
 
             size = (int)(ptr - buffer);
             if (size > 0)
-                ikcp_output(kcp, buffer, size);
+                ikcp_output(output, buffer, size);
             if (change != 0)
             {
                 var inflight = kcp->snd_nxt - kcp->snd_una;
@@ -1169,7 +1136,7 @@ namespace KCP
             }
         }
 
-        public static void ikcp_update(IKCPCB* kcp, uint current)
+        public static void ikcp_update(IKCPCB* kcp, uint current, KcpCallback output)
         {
             kcp->current = current;
             if (kcp->updated == 0)
@@ -1190,7 +1157,7 @@ namespace KCP
                 kcp->ts_flush += kcp->interval;
                 if (_itimediff(kcp->current, kcp->ts_flush) >= 0)
                     kcp->ts_flush = kcp->current + kcp->interval;
-                ikcp_flush_internal(kcp);
+                ikcp_flush_internal(kcp, output);
             }
         }
 

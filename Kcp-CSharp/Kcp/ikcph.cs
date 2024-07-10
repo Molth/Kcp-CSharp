@@ -13,10 +13,6 @@ namespace KCP
 {
     public unsafe delegate void KcpCallback(byte* buffer, int length);
 
-    public delegate void KcpRefCallback(ref byte buffer, int length);
-
-    public delegate void KcpSpanCallback(Span<byte> buffer);
-
     internal unsafe struct IQUEUEHEAD
     {
         public IQUEUEHEAD* next;
@@ -111,12 +107,10 @@ namespace KCP
         public uint* acklist;
         public uint ackcount;
         public uint ackblock;
-        public uint user;
         public byte* buffer;
         public int fastresend;
         public int fastlimit;
         public int nocwnd, stream;
-        public GCHandle output;
     }
 
     public static class KCPBASIC
