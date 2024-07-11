@@ -148,8 +148,6 @@ namespace KCP
         public static IKCPCB* ikcp_create(uint conv, ref byte[] buffer)
         {
             var kcp = (IKCPCB*)ikcp_malloc(sizeof(IKCPCB));
-            if (kcp == null)
-                return null;
             kcp->conv = conv;
             kcp->snd_una = 0;
             kcp->snd_nxt = 0;
@@ -359,8 +357,6 @@ namespace KCP
                         var capacity = (int)kcp->mss - (int)old->len;
                         var extend = len < capacity ? len : capacity;
                         seg = ikcp_segment_new(kcp, (int)old->len + extend);
-                        if (seg == null)
-                            return -2;
                         iqueue_add_tail(&seg->node, &kcp->snd_queue);
                         memcpy(seg->data, old->data, old->len);
                         if (buffer != null)
@@ -399,8 +395,6 @@ namespace KCP
                 {
                     var size = len > (int)kcp->mss ? (int)kcp->mss : len;
                     seg = ikcp_segment_new(kcp, size);
-                    if (seg == null)
-                        return -2;
                     if (buffer != null && len > 0)
                         memcpy(seg->data, buffer, size);
                     seg->len = (uint)size;
@@ -435,8 +429,6 @@ namespace KCP
                 {
                     var size = len > (int)kcp->mss ? (int)kcp->mss : len;
                     seg = ikcp_segment_new(kcp, size);
-                    if (seg == null)
-                        return -2;
                     if (buffer != null && len > 0)
                         memcpy(seg->data, buffer, size);
                     seg->len = (uint)size;
@@ -562,8 +554,6 @@ namespace KCP
             {
                 var newblock = newsize <= 8 ? 8 : _iceilpow2_(newsize);
                 var acklist = (uint*)ikcp_malloc(newblock << 3);
-                if (acklist == null)
-                    goto abort;
                 if (kcp->acklist != null)
                 {
                     uint x;
@@ -585,8 +575,6 @@ namespace KCP
             ptr[1] = ts;
             kcp->ackcount++;
             return 0;
-            abort:
-            return -1;
         }
 
         private static void ikcp_ack_get(IKCPCB* kcp, int p, uint* sn, uint* ts)
