@@ -34,21 +34,21 @@ namespace KCP
         }
 
         private static void* malloc(nint size) =>
-#if !UNITY_2021_3_OR_NEWER
+#if !UNITY_2021_3_OR_NEWER || NET6_0_OR_GREATER
             NativeMemory.Alloc((nuint)size);
 #else
             (void*)Marshal.AllocHGlobal(size);
 #endif
 
         private static void* malloc(nuint size) =>
-#if !UNITY_2021_3_OR_NEWER
+#if !UNITY_2021_3_OR_NEWER || NET6_0_OR_GREATER
             NativeMemory.Alloc(size);
 #else
             (void*)Marshal.AllocHGlobal((nint)size);
 #endif
 
         private static void free(void* ptr) =>
-#if !UNITY_2021_3_OR_NEWER
+#if !UNITY_2021_3_OR_NEWER || NET6_0_OR_GREATER
             NativeMemory.Free(ptr);
 #else
             Marshal.FreeHGlobal((nint)ptr);
