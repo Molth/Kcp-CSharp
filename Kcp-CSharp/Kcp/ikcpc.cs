@@ -149,7 +149,7 @@ namespace KCP
             kcp->mtu = MTU_DEF;
             kcp->mss = kcp->mtu - OVERHEAD;
             kcp->stream = 0;
-            kcp->buffer = (byte*)ikcp_malloc((kcp->mtu + OVERHEAD) * 3);
+            kcp->buffer = (byte*)ikcp_malloc(REVERSED_HEAD + (kcp->mtu + OVERHEAD) * 3);
             iqueue_init(&kcp->snd_queue);
             iqueue_init(&kcp->rcv_queue);
             iqueue_init(&kcp->snd_buf);
@@ -782,7 +782,7 @@ namespace KCP
         private static void ikcp_flush_internal(IKCPCB* kcp, KcpCallback output)
         {
             var current = kcp->current;
-            var buffer = kcp->buffer;
+            var buffer = kcp->buffer + REVERSED_HEAD;
             var ptr = buffer;
             int size, i;
             IQUEUEHEAD* p;
@@ -1160,7 +1160,7 @@ namespace KCP
                 return 0;
             if (mtu < (int)OVERHEAD)
                 return -1;
-            var buffer = (byte*)ikcp_malloc((nuint)((mtu + OVERHEAD) * 3));
+            var buffer = (byte*)ikcp_malloc((nuint)(REVERSED_HEAD + (mtu + OVERHEAD) * 3));
             kcp->mtu = (uint)mtu;
             kcp->mss = kcp->mtu - OVERHEAD;
             ikcp_free(kcp->buffer);
