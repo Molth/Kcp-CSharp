@@ -371,7 +371,7 @@ namespace KCP
                 {
                     count = (int)((len + kcp->mss - 1) / kcp->mss);
                     if (count >= (int)kcp->rcv_wnd)
-                        return -2;
+                        return sent > 0 ? sent : -2;
                     if (count == 0)
                         count = 1;
                 }
