@@ -1,8 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#if UNITY_2021_3_OR_NEWER || GODOT
-using System;
-#endif
 
 #pragma warning disable CS8981
 
