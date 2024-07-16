@@ -536,7 +536,7 @@ namespace KCP
             }
         }
 
-        private static int ikcp_ack_push(IKCPCB* kcp, uint sn, uint ts)
+        private static void ikcp_ack_push(IKCPCB* kcp, uint sn, uint ts)
         {
             var newsize = kcp->ackcount + 1;
             if (newsize > kcp->ackblock)
@@ -563,7 +563,6 @@ namespace KCP
             ptr[0] = sn;
             ptr[1] = ts;
             kcp->ackcount++;
-            return 0;
         }
 
         private static void ikcp_ack_get(IKCPCB* kcp, int p, uint* sn, uint* ts)
@@ -693,8 +692,7 @@ namespace KCP
                 {
                     if (_itimediff(sn, kcp->rcv_nxt + kcp->rcv_wnd) < 0)
                     {
-                        if (ikcp_ack_push(kcp, sn, ts) != 0)
-                            return -4;
+                        ikcp_ack_push(kcp, sn, ts);
                         if (_itimediff(sn, kcp->rcv_nxt) >= 0)
                         {
                             var seg = ikcp_segment_new(kcp, (int)len);
