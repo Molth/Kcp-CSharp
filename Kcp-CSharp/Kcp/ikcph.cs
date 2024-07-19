@@ -154,6 +154,6 @@ namespace KCP
         public const uint OUT_WINS = 2048;
 
         // TODO: remove it if not needed
-        public const uint REVERSED_HEAD = 5;
+        public const uint REVERSED_HEAD = 0;
     }
 }
