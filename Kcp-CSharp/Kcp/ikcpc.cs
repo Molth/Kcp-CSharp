@@ -124,11 +124,11 @@ namespace KCP
 
         private static void ikcp_segment_delete(IKCPCB* kcp, IKCPSEG* seg) => ikcp_free(seg);
 
-        private static void ikcp_output(KcpCallback output, void* data, int size)
+        private static void ikcp_output(KcpCallback output, byte* data, int size)
         {
             if (size == 0)
                 return;
-            output((byte*)data, size);
+            output(data, size);
         }
 
         public static IKCPCB* ikcp_create(uint conv)
