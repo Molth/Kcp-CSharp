@@ -1,4 +1,4 @@
-﻿#if UNITY_2021_3_OR_NEWER || GODOT
+﻿#if UNITY_2021_3_OR_NEWER || GODOT || NETSTANDARD
 using System;
 using System.Threading;
 #endif
@@ -7,10 +7,7 @@ using static KCP.IKCP;
 #pragma warning disable CS8602
 #pragma warning disable CS8625
 
-// ReSharper disable IdentifierTypo
-// ReSharper disable GrammarMistakeInComment
-// ReSharper disable PossibleNullReferenceException
-// ReSharper disable ConvertToAutoPropertyWithPrivateSetter
+// ReSharper disable ALL
 
 namespace KCP
 {

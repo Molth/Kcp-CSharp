@@ -4,8 +4,7 @@ using System.Runtime.InteropServices;
 #pragma warning disable CS1591
 #pragma warning disable CS8981
 
-// ReSharper disable IdentifierTypo
-// ReSharper disable InconsistentNaming
+// ReSharper disable ALL
 
 namespace KCP
 {

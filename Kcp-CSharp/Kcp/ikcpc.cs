@@ -3,42 +3,68 @@ using System.Runtime.InteropServices;
 using static KCP.IQUEUEHEAD;
 using static KCP.KCPBASIC;
 
+#if NETSTANDARD
+using System;
+using nint = System.IntPtr;
+using nuint = System.UIntPtr;
+#endif
+
 #pragma warning disable CS8600
 #pragma warning disable CS8602
 #pragma warning disable CS8981
 
-// ReSharper disable IdentifierTypo
-// ReSharper disable InconsistentNaming
-// ReSharper disable ConvertIfStatementToSwitchStatement
+// ReSharper disable ALL
 
 namespace KCP
 {
     internal static unsafe class IKCP
     {
-        private static void memcpy(void* dest, void* src, int n) => Unsafe.CopyBlock(dest, src, (uint)n);
-
-        private static void memcpy(void* dest, void* src, uint n) => Unsafe.CopyBlock(dest, src, n);
-
-        private static void* malloc(nint size) =>
-#if !UNITY_2021_3_OR_NEWER || NET6_0_OR_GREATER
-            NativeMemory.Alloc((nuint)size);
+        private static void memcpy(void* dest, void* src, int n)
+        {
+#if !NETSTANDARD
+            Unsafe.CopyBlock(dest, src, (uint)n);
 #else
-            (void*)Marshal.AllocHGlobal(size);
+            Buffer.MemoryCopy(src, dest, n, n);
 #endif
+        }
 
-        private static void* malloc(nuint size) =>
-#if !UNITY_2021_3_OR_NEWER || NET6_0_OR_GREATER
-            NativeMemory.Alloc(size);
+        private static void memcpy(void* dest, void* src, uint n)
+        {
+#if !NETSTANDARD
+            Unsafe.CopyBlock(dest, src, n);
 #else
-            (void*)Marshal.AllocHGlobal((nint)size);
+            Buffer.MemoryCopy(src, dest, n, n);
 #endif
+        }
 
-        private static void free(void* ptr) =>
-#if !UNITY_2021_3_OR_NEWER || NET6_0_OR_GREATER
+        private static void* malloc(nint size)
+        {
+#if NET6_0_OR_GREATER
+            return NativeMemory.Alloc((nuint)size);
+#else
+            return (void*)Marshal.AllocHGlobal(size);
+#endif
+        }
+
+        private static void* malloc(nuint size)
+        {
+#if NET6_0_OR_GREATER
+            return NativeMemory.Alloc(size);
+#elif !NETSTANDARD
+            return (void*)Marshal.AllocHGlobal((nint)size);
+#else
+            return (void*)Marshal.AllocHGlobal((int)size);
+#endif
+        }
+
+        private static void free(void* ptr)
+        {
+#if NET6_0_OR_GREATER
             NativeMemory.Free(ptr);
 #else
             Marshal.FreeHGlobal((nint)ptr);
 #endif
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static byte* ikcp_encode8u(byte* p, byte c)
@@ -114,9 +140,9 @@ namespace KCP
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int _itimediff(uint later, uint earlier) => (int)(later - earlier);
 
-        private static void* ikcp_malloc(nint size) => malloc(size);
+        private static void* ikcp_malloc(int size) => malloc((nint)size);
 
-        private static void* ikcp_malloc(nuint size) => malloc(size);
+        private static void* ikcp_malloc(uint size) => malloc((nuint)size);
 
         private static void ikcp_free(void* ptr) => free(ptr);
 
@@ -1158,7 +1184,7 @@ namespace KCP
                 return 0;
             if (mtu < (int)OVERHEAD)
                 return -1;
-            var buffer = (byte*)ikcp_malloc((nuint)(REVERSED_HEAD + (mtu + OVERHEAD) * 3));
+            var buffer = (byte*)ikcp_malloc((REVERSED_HEAD + ((uint)mtu + OVERHEAD) * 3));
             kcp->mtu = (uint)mtu;
             kcp->mss = kcp->mtu - OVERHEAD;
             ikcp_free(kcp->buffer);
