@@ -1,7 +1,5 @@
-﻿#if UNITY_2021_3_OR_NEWER || GODOT || NETSTANDARD
-using System;
+﻿using System;
 using System.Threading;
-#endif
 using static KCP.IKCP;
 
 #pragma warning disable CS8602

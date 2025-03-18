@@ -19,30 +19,12 @@ namespace KCP
 {
     internal static unsafe class IKCP
     {
-        private static void memcpy(void* dest, void* src, int n)
-        {
-#if !NETSTANDARD
-            Unsafe.CopyBlock(dest, src, (uint)n);
-#else
-            Buffer.MemoryCopy(src, dest, n, n);
-#endif
-        }
-
         private static void memcpy(void* dest, void* src, uint n)
         {
 #if !NETSTANDARD
             Unsafe.CopyBlock(dest, src, n);
 #else
             Buffer.MemoryCopy(src, dest, n, n);
-#endif
-        }
-
-        private static void* malloc(nint size)
-        {
-#if NET6_0_OR_GREATER
-            return NativeMemory.Alloc((nuint)size);
-#else
-            return (void*)Marshal.AllocHGlobal(size);
 #endif
         }
 
@@ -140,13 +122,11 @@ namespace KCP
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int _itimediff(uint later, uint earlier) => (int)(later - earlier);
 
-        private static void* ikcp_malloc(int size) => malloc((nint)size);
-
         private static void* ikcp_malloc(uint size) => malloc((nuint)size);
 
         private static void ikcp_free(void* ptr) => free(ptr);
 
-        private static IKCPSEG* ikcp_segment_new(IKCPCB* kcp, int size) => (IKCPSEG*)ikcp_malloc(sizeof(IKCPSEG) + size);
+        private static IKCPSEG* ikcp_segment_new(IKCPCB* kcp, int size) => (IKCPSEG*)ikcp_malloc((uint)(sizeof(IKCPSEG) + size));
 
         private static void ikcp_segment_delete(IKCPCB* kcp, IKCPSEG* seg) => ikcp_free(seg);
 
@@ -159,7 +139,7 @@ namespace KCP
 
         public static IKCPCB* ikcp_create(uint conv)
         {
-            var kcp = (IKCPCB*)ikcp_malloc(sizeof(IKCPCB));
+            var kcp = (IKCPCB*)ikcp_malloc((uint)sizeof(IKCPCB));
             kcp->conv = conv;
             kcp->snd_una = 0;
             kcp->snd_nxt = 0;
@@ -376,7 +356,7 @@ namespace KCP
                         memcpy(seg->data, old->data, old->len);
                         if (buffer != null)
                         {
-                            memcpy(seg->data + old->len, buffer, extend);
+                            memcpy(seg->data + old->len, buffer, (uint)extend);
                             buffer += extend;
                         }
 
@@ -411,7 +391,7 @@ namespace KCP
                     var size = len > (int)kcp->mss ? (int)kcp->mss : len;
                     seg = ikcp_segment_new(kcp, size);
                     if (buffer != null && len > 0)
-                        memcpy(seg->data, buffer, size);
+                        memcpy(seg->data, buffer, (uint)size);
                     seg->len = (uint)size;
                     seg->frg = 0;
                     iqueue_init(&seg->node);
@@ -445,7 +425,7 @@ namespace KCP
                     var size = len > (int)kcp->mss ? (int)kcp->mss : len;
                     seg = ikcp_segment_new(kcp, size);
                     if (buffer != null && len > 0)
-                        memcpy(seg->data, buffer, size);
+                        memcpy(seg->data, buffer, (uint)size);
                     seg->len = (uint)size;
                     seg->frg = (uint)(count - i - 1);
                     iqueue_init(&seg->node);

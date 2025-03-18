@@ -1,9 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
-        <RootNamespace>Kcp_CSharp</RootNamespace>
-        <ImplicitUsings>enable</ImplicitUsings>
+        <TargetFramework>.net8.0</TargetFramework>
+        <ImplicitUsings>false</ImplicitUsings>
         <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
