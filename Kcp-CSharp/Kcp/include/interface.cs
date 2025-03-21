@@ -1,3 +1,7 @@
+#pragma warning disable CS8632
+
+// ReSharper disable ALL
+
 namespace KCP
 {
     //---------------------------------------------------------------------

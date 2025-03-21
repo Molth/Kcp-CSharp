@@ -1,6 +1,11 @@
 using System;
 using System.Runtime.CompilerServices;
 
+#pragma warning disable CS8602
+#pragma warning disable CS8632
+
+// ReSharper disable ALL
+
 namespace KCP
 {
     public static unsafe partial class KCP
