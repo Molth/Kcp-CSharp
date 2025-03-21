@@ -8,6 +8,9 @@ using System.Runtime.CompilerServices;
 
 namespace KCP
 {
+    /// <summary>
+    ///     https://github.com/skywind3000/kcp
+    /// </summary>
     public static unsafe partial class KCP
     {
         //=====================================================================
@@ -521,7 +524,7 @@ namespace KCP
             if (len <= (int)kcp->mss) count = 1;
             else count = (int)((len + kcp->mss - 1) / kcp->mss);
 
-            if (count >= (int)IKCP_WND_RCV)
+            if (count >= (int)kcp->rcv_wnd)
             {
                 if (kcp->stream != 0 && sent > 0)
                     return sent;
