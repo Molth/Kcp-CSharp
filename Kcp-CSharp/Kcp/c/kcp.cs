@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
+#pragma warning disable CS1591
 #pragma warning disable CS8602
 #pragma warning disable CS8632
 
