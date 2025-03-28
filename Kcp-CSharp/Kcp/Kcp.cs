@@ -230,11 +230,6 @@ namespace KCP
         public uint AckBlock => _kcp->ackblock;
 
         /// <summary>
-        ///     Pointer to the buffer
-        /// </summary>
-        public byte* Buffer => _kcp->buffer;
-
-        /// <summary>
         ///     Fast resend trigger count
         /// </summary>
         public int FastResend => _kcp->fastresend;
@@ -356,7 +351,8 @@ namespace KCP
         ///     Update
         /// </summary>
         /// <param name="current">Timestamp</param>
-        public void Update(uint current) => ikcp_update(_kcp, current, _output);
+        /// <param name="buffer">Buffer</param>
+        public void Update(uint current, Span<byte> buffer) => ikcp_update(_kcp, current, _output, buffer);
 
         /// <summary>
         ///     Check
@@ -368,7 +364,8 @@ namespace KCP
         /// <summary>
         ///     Flush
         /// </summary>
-        public void Flush() => ikcp_flush(_kcp, _output);
+        /// <param name="buffer">Buffer</param>
+        public void Flush(Span<byte> buffer) => ikcp_flush(_kcp, _output, buffer);
 
         /// <summary>
         ///     Set maximum transmission unit

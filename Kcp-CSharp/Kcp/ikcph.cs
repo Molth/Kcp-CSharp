@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 
 namespace KCP
 {
-    public unsafe delegate void KcpCallback(byte* buffer, int length);
+    public delegate void KcpCallback(int length);
 
     internal unsafe struct IQUEUEHEAD
     {
@@ -104,7 +104,6 @@ namespace KCP
         public uint* acklist;
         public uint ackcount;
         public uint ackblock;
-        public byte* buffer;
         public int fastresend;
         public int fastlimit;
         public int nocwnd, stream;
