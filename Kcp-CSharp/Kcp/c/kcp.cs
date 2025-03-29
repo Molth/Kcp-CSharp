@@ -396,7 +396,7 @@ namespace KCP
 
                 if (ikcp_canlog(kcp, (int)IKCP_LOG_RECV) != 0)
                 {
-                    ikcp_log(kcp, (int)IKCP_LOG_RECV, "recv sn={0}", seg->sn);
+                    ikcp_log(kcp, (int)IKCP_LOG_RECV, "recv sn={0}", (ulong)seg->sn);
                 }
 
                 if (ispeek == 0)
@@ -872,7 +872,7 @@ namespace KCP
                     if (ikcp_canlog(kcp, (int)IKCP_LOG_IN_ACK) != 0)
                     {
                         ikcp_log(kcp, (int)IKCP_LOG_IN_ACK,
-                            "input ack: sn={0} rtt={1} rto={2}", sn,
+                            "input ack: sn={0} rtt={1} rto={2}", (ulong)sn,
                             (long)_itimediff(kcp->current, ts),
                             (long)kcp->rx_rto);
                     }
@@ -882,7 +882,7 @@ namespace KCP
                     if (ikcp_canlog(kcp, (int)IKCP_LOG_IN_DATA) != 0)
                     {
                         ikcp_log(kcp, (int)IKCP_LOG_IN_DATA,
-                            "input psh: sn={0} ts={1}", sn, ts);
+                            "input psh: sn={0} ts={1}", (ulong)sn, (ulong)ts);
                     }
 
                     if (_itimediff(sn, kcp->rcv_nxt + kcp->rcv_wnd) < 0)
@@ -925,7 +925,7 @@ namespace KCP
                     if (ikcp_canlog(kcp, (int)IKCP_LOG_IN_WINS) != 0)
                     {
                         ikcp_log(kcp, (int)IKCP_LOG_IN_WINS,
-                            "input wins: {0}", (wnd));
+                            "input wins: {0}", (ulong)wnd);
                     }
                 }
                 else
