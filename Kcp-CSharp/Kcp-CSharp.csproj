@@ -2,14 +2,14 @@
 
     <PropertyGroup>
         <TargetFrameworks>net9.0;net8.0;net7.0;net6.0;net5.0</TargetFrameworks>
-        <RootNamespace>KCP</RootNamespace>
+        <RootNamespace>kcp</RootNamespace>
         <ImplicitUsings>disable</ImplicitUsings>
         <Nullable>enable</Nullable>
 
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
         <PackageId>Kcp-CSharp</PackageId>
-        <Version>1.0.1</Version>
+        <Version>1.0.2</Version>
         <Authors>Molth Nevin</Authors>
         <Company>Hell</Company>
         <Description>High performance pure c# kcp implementation.</Description>

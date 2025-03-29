@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 // ReSharper disable ALL
 
-namespace KCP
+namespace kcp
 {
     public static unsafe partial class KCP
     {

@@ -3,7 +3,7 @@
 
 // ReSharper disable ALL
 
-namespace KCP
+namespace kcp
 {
     //---------------------------------------------------------------------
     // interface

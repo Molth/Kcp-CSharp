@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 // ReSharper disable ALL
 
-namespace KCP
+namespace kcp
 {
     /// <summary>
     ///     https://github.com/skywind3000/kcp
