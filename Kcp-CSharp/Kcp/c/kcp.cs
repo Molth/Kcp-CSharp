@@ -1,4 +1,3 @@
-using System;
 using System.Runtime.CompilerServices;
 
 #pragma warning disable CS1591
@@ -193,7 +192,7 @@ namespace KCP
         // write log
         public static void ikcp_log(IKCPCB* kcp, int mask, string fmt, params object?[] args)
         {
-            if ((mask & kcp->logmask) == 0 || (nint)kcp->writelog == IntPtr.Zero) return;
+            if ((mask & kcp->logmask) == 0 || (nint)kcp->writelog == 0) return;
             kcp->writelog(string.Format(fmt, args), kcp, kcp->user);
         }
 
