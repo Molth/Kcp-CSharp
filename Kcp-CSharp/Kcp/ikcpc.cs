@@ -146,7 +146,7 @@ namespace KCP
 
         public static IKCPCB* ikcp_create(uint conv)
         {
-            var kcp = (IKCPCB*)ikcp_malloc((uint)sizeof(IKCPCB));
+            IKCPCB* kcp = (IKCPCB*)ikcp_malloc((uint)sizeof(IKCPCB));
             kcp->conv = conv;
             kcp->snd_una = 0;
             kcp->snd_nxt = 0;
@@ -244,7 +244,7 @@ namespace KCP
         {
             if (iqueue_is_empty(&kcp->rcv_queue))
                 return -1;
-            var peeksize = ikcp_peeksize_internal(kcp);
+            int peeksize = ikcp_peeksize_internal(kcp);
             if (peeksize < 0)
                 return -2;
             int recover;
@@ -268,7 +268,7 @@ namespace KCP
                     }
 
                     len += (int)seg->len;
-                    var fragment = (int)seg->frg;
+                    int fragment = (int)seg->frg;
                     if (fragment == 0)
                         break;
                 }
@@ -290,7 +290,7 @@ namespace KCP
                     }
 
                     len += (int)seg->len;
-                    var fragment = (int)seg->frg;
+                    int fragment = (int)seg->frg;
                     iqueue_del(&seg->node);
                     ikcp_segment_delete(kcp, seg);
                     kcp->nrcv_que--;
@@ -325,13 +325,13 @@ namespace KCP
 
         private static int ikcp_peeksize_internal(IKCPCB* kcp)
         {
-            var seg = iqueue_entry(kcp->rcv_queue.next);
+            IKCPSEG* seg = iqueue_entry(kcp->rcv_queue.next);
             if (seg->frg == 0)
                 return (int)seg->len;
             if (kcp->nrcv_que < seg->frg + 1)
                 return -1;
             IQUEUEHEAD* p;
-            var length = 0;
+            int length = 0;
             for (p = kcp->rcv_queue.next; p != &kcp->rcv_queue; p = p->next)
             {
                 seg = iqueue_entry(p);
@@ -348,16 +348,16 @@ namespace KCP
             if (len < 0)
                 return -1;
             IKCPSEG* seg;
-            var sent = 0;
+            int sent = 0;
             if (kcp->stream != 0)
             {
                 if (!iqueue_is_empty(&kcp->snd_queue))
                 {
-                    var old = iqueue_entry(kcp->snd_queue.prev);
+                    IKCPSEG* old = iqueue_entry(kcp->snd_queue.prev);
                     if (old->len < kcp->mss)
                     {
-                        var capacity = (int)kcp->mss - (int)old->len;
-                        var extend = len < capacity ? len : capacity;
+                        int capacity = (int)kcp->mss - (int)old->len;
+                        int extend = len < capacity ? len : capacity;
                         seg = ikcp_segment_new(kcp, (int)old->len + extend);
                         iqueue_add_tail(&seg->node, &kcp->snd_queue);
                         memcpy(seg->data, old->data, old->len);
@@ -395,7 +395,7 @@ namespace KCP
                 int i;
                 for (i = 0; i < count; ++i)
                 {
-                    var size = len > (int)kcp->mss ? (int)kcp->mss : len;
+                    int size = len > (int)kcp->mss ? (int)kcp->mss : len;
                     seg = ikcp_segment_new(kcp, size);
                     if (buffer != null && len > 0)
                         memcpy(seg->data, buffer, (uint)size);
@@ -429,7 +429,7 @@ namespace KCP
                 int i;
                 for (i = 0; i < count; ++i)
                 {
-                    var size = len > (int)kcp->mss ? (int)kcp->mss : len;
+                    int size = len > (int)kcp->mss ? (int)kcp->mss : len;
                     seg = ikcp_segment_new(kcp, size);
                     if (buffer != null && len > 0)
                         memcpy(seg->data, buffer, (uint)size);
@@ -457,7 +457,7 @@ namespace KCP
             }
             else
             {
-                var delta = rtt - kcp->rx_srtt;
+                int delta = rtt - kcp->rx_srtt;
                 if (delta < 0)
                     delta = -delta;
                 kcp->rx_rttval = (3 * kcp->rx_rttval + delta) / 4;
@@ -466,16 +466,16 @@ namespace KCP
                     kcp->rx_srtt = 1;
             }
 
-            var rto = (int)(kcp->rx_srtt + _imax_(kcp->interval, (uint)(4 * kcp->rx_rttval)));
+            int rto = (int)(kcp->rx_srtt + _imax_(kcp->interval, (uint)(4 * kcp->rx_rttval)));
             kcp->rx_rto = (int)_ibound_((uint)kcp->rx_minrto, (uint)rto, RTO_MAX);
         }
 
         private static void ikcp_shrink_buf(IKCPCB* kcp)
         {
-            var p = kcp->snd_buf.next;
+            IQUEUEHEAD* p = kcp->snd_buf.next;
             if (p != &kcp->snd_buf)
             {
-                var seg = iqueue_entry(p);
+                IKCPSEG* seg = iqueue_entry(p);
                 kcp->snd_una = seg->sn;
             }
             else
@@ -491,7 +491,7 @@ namespace KCP
             IQUEUEHEAD* p, next;
             for (p = kcp->snd_buf.next; p != &kcp->snd_buf; p = next)
             {
-                var seg = iqueue_entry(p);
+                IKCPSEG* seg = iqueue_entry(p);
                 next = p->next;
                 if (sn == seg->sn)
                 {
@@ -511,7 +511,7 @@ namespace KCP
             IQUEUEHEAD* p, next;
             for (p = kcp->snd_buf.next; p != &kcp->snd_buf; p = next)
             {
-                var seg = iqueue_entry(p);
+                IKCPSEG* seg = iqueue_entry(p);
                 next = p->next;
                 if (_itimediff(una, seg->sn) > 0)
                 {
@@ -533,7 +533,7 @@ namespace KCP
             IQUEUEHEAD* p, next;
             for (p = kcp->snd_buf.next; p != &kcp->snd_buf; p = next)
             {
-                var seg = iqueue_entry(p);
+                IKCPSEG* seg = iqueue_entry(p);
                 next = p->next;
                 if (_itimediff(sn, seg->sn) < 0)
                     break;
@@ -551,11 +551,11 @@ namespace KCP
 
         private static void ikcp_ack_push(IKCPCB* kcp, uint sn, uint ts)
         {
-            var newsize = kcp->ackcount + 1;
+            uint newsize = kcp->ackcount + 1;
             if (newsize > kcp->ackblock)
             {
-                var newblock = newsize <= 8 ? 8 : _iceilpow2_(newsize);
-                var acklist = (uint*)ikcp_malloc(newblock << 3);
+                uint newblock = newsize <= 8 ? 8 : _iceilpow2_(newsize);
+                uint* acklist = (uint*)ikcp_malloc(newblock << 3);
                 if (kcp->acklist != null)
                 {
                     uint x;
@@ -572,7 +572,7 @@ namespace KCP
                 kcp->ackblock = newblock;
             }
 
-            var ptr = &kcp->acklist[kcp->ackcount * 2];
+            uint* ptr = &kcp->acklist[kcp->ackcount * 2];
             ptr[0] = sn;
             ptr[1] = ts;
             kcp->ackcount++;
@@ -588,7 +588,7 @@ namespace KCP
 
         private static void ikcp_parse_data(IKCPCB* kcp, IKCPSEG* newseg)
         {
-            var sn = newseg->sn;
+            uint sn = newseg->sn;
             if (_itimediff(sn, kcp->rcv_nxt + kcp->rcv_wnd) >= 0 || _itimediff(sn, kcp->rcv_nxt) < 0)
             {
                 ikcp_segment_delete(kcp, newseg);
@@ -596,10 +596,10 @@ namespace KCP
             }
 
             IQUEUEHEAD* p, prev;
-            var repeat = 0;
+            int repeat = 0;
             for (p = kcp->rcv_buf.prev; p != &kcp->rcv_buf; p = prev)
             {
-                var seg = iqueue_entry(p);
+                IKCPSEG* seg = iqueue_entry(p);
                 prev = p->prev;
                 if (seg->sn == sn)
                 {
@@ -624,7 +624,7 @@ namespace KCP
 
             while (!iqueue_is_empty(&kcp->rcv_buf))
             {
-                var seg = iqueue_entry(kcp->rcv_buf.next);
+                IKCPSEG* seg = iqueue_entry(kcp->rcv_buf.next);
                 if (seg->sn == kcp->rcv_nxt && kcp->nrcv_que < kcp->rcv_wnd)
                 {
                     iqueue_del(&seg->node);
@@ -644,9 +644,9 @@ namespace KCP
         {
             if (data == null || size < (int)OVERHEAD)
                 return -1;
-            var prev_una = kcp->snd_una;
+            uint prev_una = kcp->snd_una;
             uint maxack = 0, latest_ts = 0;
-            var flag = 0;
+            int flag = 0;
             while (true)
             {
                 uint ts, sn, len, una, conv;
@@ -708,7 +708,7 @@ namespace KCP
                         ikcp_ack_push(kcp, sn, ts);
                         if (_itimediff(sn, kcp->rcv_nxt) >= 0)
                         {
-                            var seg = ikcp_segment_new(kcp, (int)len);
+                            IKCPSEG* seg = ikcp_segment_new(kcp, (int)len);
                             seg->conv = conv;
                             seg->cmd = cmd;
                             seg->frg = frg;
@@ -742,7 +742,7 @@ namespace KCP
             {
                 if (kcp->cwnd < kcp->rmt_wnd)
                 {
-                    var mss = kcp->mss;
+                    uint mss = kcp->mss;
                     if (kcp->cwnd < kcp->ssthresh)
                     {
                         kcp->cwnd++;
@@ -792,13 +792,13 @@ namespace KCP
 
         private static void ikcp_flush_internal(IKCPCB* kcp, KcpCallback output)
         {
-            var current = kcp->current;
-            var buffer = kcp->buffer + REVERSED_HEAD;
-            var ptr = buffer;
+            uint current = kcp->current;
+            byte* buffer = kcp->buffer + REVERSED_HEAD;
+            byte* ptr = buffer;
             int size, i;
             IQUEUEHEAD* p;
-            var change = 0;
-            var lost = 0;
+            int change = 0;
+            int lost = 0;
             IKCPSEG seg;
             seg.conv = kcp->conv;
             seg.cmd = CMD_ACK;
@@ -808,7 +808,7 @@ namespace KCP
             seg.len = 0;
             seg.sn = 0;
             seg.ts = 0;
-            var count = (int)kcp->ackcount;
+            int count = (int)kcp->ackcount;
             for (i = 0; i < count; ++i)
             {
                 size = (int)(ptr - buffer);
@@ -877,14 +877,14 @@ namespace KCP
             }
 
             kcp->probe = 0;
-            var cwnd = _imin_(kcp->snd_wnd, kcp->rmt_wnd);
+            uint cwnd = _imin_(kcp->snd_wnd, kcp->rmt_wnd);
             if (kcp->nocwnd == 0)
                 cwnd = _imin_(kcp->cwnd, cwnd);
             while (_itimediff(kcp->snd_nxt, kcp->snd_una + cwnd) < 0)
             {
                 if (iqueue_is_empty(&kcp->snd_queue))
                     break;
-                var newseg = iqueue_entry(kcp->snd_queue.next);
+                IKCPSEG* newseg = iqueue_entry(kcp->snd_queue.next);
                 iqueue_del(&newseg->node);
                 iqueue_add_tail(&newseg->node, &kcp->snd_buf);
                 kcp->nsnd_que--;
@@ -901,14 +901,14 @@ namespace KCP
                 newseg->xmit = 0;
             }
 
-            var resent = kcp->fastresend > 0 ? (uint)kcp->fastresend : 4294967295;
+            uint resent = kcp->fastresend > 0 ? (uint)kcp->fastresend : 4294967295;
             if (kcp->nodelay == 0)
             {
-                var rtomin = (uint)(kcp->rx_rto >> 3);
+                uint rtomin = (uint)(kcp->rx_rto >> 3);
                 for (p = kcp->snd_buf.next; p != &kcp->snd_buf; p = p->next)
                 {
-                    var segment = iqueue_entry(p);
-                    var needsend = 0;
+                    IKCPSEG* segment = iqueue_entry(p);
+                    int needsend = 0;
                     if (segment->xmit == 0)
                     {
                         needsend = 1;
@@ -943,7 +943,7 @@ namespace KCP
                         segment->wnd = seg.wnd;
                         segment->una = kcp->rcv_nxt;
                         size = (int)(ptr - buffer);
-                        var need = (int)(OVERHEAD + segment->len);
+                        int need = (int)(OVERHEAD + segment->len);
                         if (size + need > (int)kcp->mtu)
                         {
                             ikcp_output(output, buffer, size);
@@ -966,8 +966,8 @@ namespace KCP
             {
                 for (p = kcp->snd_buf.next; p != &kcp->snd_buf; p = p->next)
                 {
-                    var segment = iqueue_entry(p);
-                    var needsend = 0;
+                    IKCPSEG* segment = iqueue_entry(p);
+                    int needsend = 0;
                     if (segment->xmit == 0)
                     {
                         needsend = 1;
@@ -980,7 +980,7 @@ namespace KCP
                         needsend = 1;
                         segment->xmit++;
                         kcp->xmit++;
-                        var step = (int)segment->rto;
+                        int step = (int)segment->rto;
                         segment->rto += (uint)(step / 2);
                         segment->resendts = current + segment->rto;
                         lost = 1;
@@ -1003,7 +1003,7 @@ namespace KCP
                         segment->wnd = seg.wnd;
                         segment->una = kcp->rcv_nxt;
                         size = (int)(ptr - buffer);
-                        var need = (int)(OVERHEAD + segment->len);
+                        int need = (int)(OVERHEAD + segment->len);
                         if (size + need > (int)kcp->mtu)
                         {
                             ikcp_output(output, buffer, size);
@@ -1026,8 +1026,8 @@ namespace KCP
             {
                 for (p = kcp->snd_buf.next; p != &kcp->snd_buf; p = p->next)
                 {
-                    var segment = iqueue_entry(p);
-                    var needsend = 0;
+                    IKCPSEG* segment = iqueue_entry(p);
+                    int needsend = 0;
                     if (segment->xmit == 0)
                     {
                         needsend = 1;
@@ -1040,7 +1040,7 @@ namespace KCP
                         needsend = 1;
                         segment->xmit++;
                         kcp->xmit++;
-                        var step = (int)segment->rto;
+                        int step = (int)segment->rto;
                         segment->rto += (uint)(step / 2);
                         segment->resendts = current + segment->rto;
                         lost = 1;
@@ -1063,7 +1063,7 @@ namespace KCP
                         segment->wnd = seg.wnd;
                         segment->una = kcp->rcv_nxt;
                         size = (int)(ptr - buffer);
-                        var need = (int)(OVERHEAD + segment->len);
+                        int need = (int)(OVERHEAD + segment->len);
                         if (size + need > (int)kcp->mtu)
                         {
                             ikcp_output(output, buffer, size);
@@ -1088,7 +1088,7 @@ namespace KCP
                 ikcp_output(output, buffer, size);
             if (change != 0)
             {
-                var inflight = kcp->snd_nxt - kcp->snd_una;
+                uint inflight = kcp->snd_nxt - kcp->snd_una;
                 kcp->ssthresh = inflight / 2;
                 if (kcp->ssthresh < THRESH_MIN)
                     kcp->ssthresh = THRESH_MIN;
@@ -1121,7 +1121,7 @@ namespace KCP
                 kcp->ts_flush = kcp->current;
             }
 
-            var slap = _itimediff(kcp->current, kcp->ts_flush);
+            int slap = _itimediff(kcp->current, kcp->ts_flush);
             if (slap >= 10000 || slap < -10000)
             {
                 kcp->ts_flush = kcp->current;
@@ -1141,25 +1141,25 @@ namespace KCP
         {
             if (kcp->updated == 0)
                 return current;
-            var ts_flush = kcp->ts_flush;
+            uint ts_flush = kcp->ts_flush;
             if (_itimediff(current, ts_flush) >= 10000 || _itimediff(current, ts_flush) < -10000)
                 ts_flush = current;
             if (_itimediff(current, ts_flush) >= 0)
                 return current;
-            var tm_packet = 2147483647;
-            var tm_flush = _itimediff(ts_flush, current);
+            int tm_packet = 2147483647;
+            int tm_flush = _itimediff(ts_flush, current);
             IQUEUEHEAD* p;
             for (p = kcp->snd_buf.next; p != &kcp->snd_buf; p = p->next)
             {
-                var seg = iqueue_entry(p);
-                var diff = _itimediff(seg->resendts, current);
+                IKCPSEG* seg = iqueue_entry(p);
+                int diff = _itimediff(seg->resendts, current);
                 if (diff <= 0)
                     return current;
                 if (diff < tm_packet)
                     tm_packet = diff;
             }
 
-            var minimal = (uint)(tm_packet < tm_flush ? tm_packet : tm_flush);
+            uint minimal = (uint)(tm_packet < tm_flush ? tm_packet : tm_flush);
             if (minimal >= kcp->interval)
                 minimal = kcp->interval;
             return current + minimal;
@@ -1171,7 +1171,7 @@ namespace KCP
                 return 0;
             if (mtu < (int)OVERHEAD)
                 return -1;
-            var buffer = (byte*)ikcp_malloc((REVERSED_HEAD + ((uint)mtu + OVERHEAD) * 3));
+            byte* buffer = (byte*)ikcp_malloc((REVERSED_HEAD + ((uint)mtu + OVERHEAD) * 3));
             kcp->mtu = (uint)mtu;
             kcp->mss = kcp->mtu - OVERHEAD;
             ikcp_free(kcp->buffer);
