@@ -1,4 +1,7 @@
-﻿using System;
+﻿#if NET6_0_OR_GREATER
+using System.Numerics;
+#endif
+using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using static KCP.IQUEUEHEAD;
@@ -109,14 +112,18 @@ namespace KCP
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static uint _iceilpow2_(uint x)
         {
-            x--;
+#if NET6_0_OR_GREATER
+            return BitOperations.RoundUpToPowerOf2(x);
+#else
+            --x;
             x |= x >> 1;
             x |= x >> 2;
             x |= x >> 4;
             x |= x >> 8;
             x |= x >> 16;
-            x++;
+            ++x;
             return x;
+#endif
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
