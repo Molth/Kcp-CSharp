@@ -1,3 +1,6 @@
+#if NET6_0_OR_GREATER
+using System.Numerics;
+#endif
 using System.Runtime.CompilerServices;
 
 #pragma warning disable CA2211
@@ -136,6 +139,23 @@ namespace kcp
         public static uint _ibound_(uint lower, uint middle, uint upper)
         {
             return _imin_(_imax_(lower, middle), upper);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static uint _iceilpow2_(uint x)
+        {
+#if NET6_0_OR_GREATER
+            return BitOperations.RoundUpToPowerOf2(x);
+#else
+            --x;
+            x |= x >> 1;
+            x |= x >> 2;
+            x |= x >> 4;
+            x |= x >> 8;
+            x |= x >> 16;
+            ++x;
+            return x;
+#endif
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -691,7 +711,7 @@ namespace kcp
                 uint* acklist;
                 uint newblock;
 
-                for (newblock = 8; newblock < newsize; newblock <<= 1) ;
+                newblock = newsize <= 8 ? 8 : _iceilpow2_(newsize);
                 acklist = (uint*)ikcp_malloc(newblock * sizeof(uint) * 2);
 
                 if (acklist == null)
