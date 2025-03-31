@@ -9,10 +9,10 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
         <PackageId>Kcp-CSharp</PackageId>
-        <Version>1.0.4</Version>
+        <Version>1.0.5</Version>
         <Authors>Molth Nevin</Authors>
         <Company>Hell</Company>
-        <Description>High performance pure c# kcp implementation.</Description>
+        <Description>High performance pure c# kcp translation.</Description>
         <PackageProjectUrl>https://github.com/Molth/Kcp-CSharp</PackageProjectUrl>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <PackageTags>kcp;native;performance;networking</PackageTags>
