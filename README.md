@@ -1,4 +1,4 @@
-This project is a pure C# [KCP](https://github.com/skywind3000/kcp) instance callback(delegate) wrapper for (Unity/Godot/.NET) 
+This project is a pure C# [KCP](https://github.com/skywind3000/kcp) instance callback(delegate) wrapper.
 
 ## Acknowledgements 
 
