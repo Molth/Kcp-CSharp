@@ -1,1 +1,1 @@
-This project is a pure C# translation of [KCP](https://github.com/skywind3000/kcp) for (Unity/Godot/.NET)
+This project is a pure C# translation of [KCP](https://github.com/skywind3000/kcp).

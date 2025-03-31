@@ -9,7 +9,7 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
         <PackageId>Kcp-CSharp</PackageId>
-        <Version>1.0.3</Version>
+        <Version>1.0.4</Version>
         <Authors>Molth Nevin</Authors>
         <Company>Hell</Company>
         <Description>High performance pure c# kcp implementation.</Description>
