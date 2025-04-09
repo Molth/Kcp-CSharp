@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using System.Threading;
-using static KCP.IKCP;
+using kcp;
+using static kcp.KCP;
 
 #pragma warning disable CS8601
 #pragma warning disable CS8602
@@ -11,6 +12,11 @@ using static KCP.IKCP;
 
 namespace KCP
 {
+    /// <summary>
+    ///     Kcp callback
+    /// </summary>
+    public delegate void KcpCallback(byte[] buffer, int length);
+
     /// <summary>
     ///     Kcp
     /// </summary>
@@ -32,6 +38,11 @@ namespace KCP
         private byte[] _buffer;
 
         /// <summary>
+        ///     Reserved overhead
+        /// </summary>
+        private int _reserved;
+
+        /// <summary>
         ///     Disposed
         /// </summary>
         private int _disposed;
@@ -39,20 +50,14 @@ namespace KCP
         /// <summary>
         ///     Structure
         /// </summary>
-        /// <param name="output">Output</param>
-        public Kcp(KcpCallback output) : this(0, output)
-        {
-        }
-
-        /// <summary>
-        ///     Structure
-        /// </summary>
         /// <param name="conv">ConversationId</param>
         /// <param name="output">Output</param>
-        public Kcp(uint conv, KcpCallback output)
+        /// <param name="reserved">Reserved overhead</param>
+        public Kcp(uint conv, KcpCallback output, int reserved = 0)
         {
             _kcp = ikcp_create(conv, ref _buffer);
             _output = output;
+            _reserved = reserved;
         }
 
         /// <summary>
@@ -78,7 +83,7 @@ namespace KCP
         /// <summary>
         ///     Connection state
         /// </summary>
-        public int State => _kcp->state;
+        public uint State => _kcp->state;
 
         /// <summary>
         ///     The sequence number of the first unacknowledged packet
@@ -266,6 +271,11 @@ namespace KCP
         public KcpCallback Output => _output;
 
         /// <summary>
+        ///     Reserved overhead
+        /// </summary>
+        public int Reserved => _reserved;
+
+        /// <summary>
         ///     Dispose
         /// </summary>
         public void Dispose()
@@ -297,9 +307,9 @@ namespace KCP
         /// <returns>Sent bytes</returns>
         public int Send(ReadOnlySpan<byte> buffer)
         {
-            fixed (byte* src = &MemoryMarshal.GetReference(buffer))
+            fixed (byte* pinnedBuffer = &MemoryMarshal.GetReference(buffer))
             {
-                return ikcp_send(_kcp, src, buffer.Length);
+                return ikcp_send(_kcp, pinnedBuffer, buffer.Length);
             }
         }
 
@@ -318,9 +328,9 @@ namespace KCP
         /// <returns>Input bytes</returns>
         public int Input(ReadOnlySpan<byte> buffer)
         {
-            fixed (byte* src = &MemoryMarshal.GetReference(buffer))
+            fixed (byte* pinnedBuffer = &MemoryMarshal.GetReference(buffer))
             {
-                return ikcp_input(_kcp, src, buffer.Length);
+                return ikcp_input(_kcp, pinnedBuffer, buffer.Length);
             }
         }
 
@@ -345,9 +355,9 @@ namespace KCP
         /// <returns>Received bytes</returns>
         public int Receive(Span<byte> buffer)
         {
-            fixed (byte* dest = &MemoryMarshal.GetReference(buffer))
+            fixed (byte* pinnedBuffer = &MemoryMarshal.GetReference(buffer))
             {
-                return ikcp_recv(_kcp, dest, buffer.Length);
+                return ikcp_recv(_kcp, pinnedBuffer, buffer.Length);
             }
         }
 
@@ -363,7 +373,13 @@ namespace KCP
         ///     Update
         /// </summary>
         /// <param name="current">Timestamp</param>
-        public void Update(uint current) => ikcp_update(_kcp, current, _output, _buffer);
+        public void Update(uint current)
+        {
+            fixed (byte* ptr = &_buffer[_reserved])
+            {
+                ikcp_update(_kcp, current, ptr, (_buffer, _output));
+            }
+        }
 
         /// <summary>
         ///     Check
@@ -375,7 +391,13 @@ namespace KCP
         /// <summary>
         ///     Flush
         /// </summary>
-        public void Flush() => ikcp_flush(_kcp, _output, _buffer);
+        public void Flush()
+        {
+            fixed (byte* ptr = &_buffer[_reserved])
+            {
+                ikcp_flush(_kcp, ptr, (_buffer, _output));
+            }
+        }
 
         /// <summary>
         ///     Set maximum transmission unit
@@ -410,18 +432,18 @@ namespace KCP
         ///     Set fast resend limit
         /// </summary>
         /// <param name="fastlimit">Fast resend limit</param>
-        public void SetFastResendLimit(int fastlimit) => ikcp_fastresendlimit(_kcp, fastlimit);
+        public void SetFastResendLimit(int fastlimit) => _kcp->fastlimit = Math.Clamp(fastlimit, 0, 5);
 
         /// <summary>
         ///     Set whether stream mode is enabled
         /// </summary>
         /// <param name="stream">Whether stream mode is enabled</param>
-        public void SetStreamMode(int stream) => ikcp_streammode(_kcp, stream);
+        public void SetStreamMode(int stream) => _kcp->stream = stream == 1 ? 1 : 0;
 
         /// <summary>
         ///     Set minimum retransmission timeout
         /// </summary>
         /// <param name="minrto">Minimum retransmission timeout</param>
-        public void SetMinrto(int minrto) => ikcp_minrto(_kcp, minrto);
+        public void SetMinrto(int minrto) => _kcp->rx_minrto = (int)Math.Clamp(minrto, 1, IKCP_RTO_MAX);
     }
 }
