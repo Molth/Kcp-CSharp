@@ -4,7 +4,6 @@ using System.Runtime.InteropServices;
 
 #if !NETSTANDARD
 using System.Runtime.CompilerServices;
-
 #else
 using nint = System.IntPtr;
 using nuint = System.UIntPtr;
@@ -43,7 +42,7 @@ namespace kcp
 #if !NETSTANDARD
             Unsafe.CopyBlockUnaligned(dst, src, (uint)size);
 #else
-            Buffer.MemoryCopy(src, dst,  (ulong)size,  (ulong)size);
+            Buffer.MemoryCopy(src, dst, (ulong)size, (ulong)size);
 #endif
         }
 
