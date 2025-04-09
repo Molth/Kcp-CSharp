@@ -15,7 +15,7 @@ namespace KCP
     /// <summary>
     ///     Kcp callback
     /// </summary>
-    public unsafe delegate void KcpCallback(Span<byte> buffer);
+    public unsafe delegate void KcpCallback(Span<byte> buffer, int length);
 
     /// <summary>
     ///     Kcp
@@ -367,16 +367,9 @@ namespace KCP
         {
             fixed (byte* pinnedBuffer = &MemoryMarshal.GetReference(buffer))
             {
-                ikcp_update(_kcp, current, pinnedBuffer, _reserved, _output);
+                ikcp_update(_kcp, current, pinnedBuffer + _reserved, buffer, _output);
             }
         }
-
-        /// <summary>
-        ///     Update
-        /// </summary>
-        /// <param name="current">Timestamp</param>
-        /// <param name="buffer">Buffer</param>
-        public void Update(uint current, byte* buffer) => ikcp_update(_kcp, current, buffer, _reserved, _output);
 
         /// <summary>
         ///     Check
@@ -392,14 +385,9 @@ namespace KCP
         {
             fixed (byte* pinnedBuffer = &MemoryMarshal.GetReference(buffer))
             {
-                ikcp_flush(_kcp, pinnedBuffer, _reserved, _output);
+                ikcp_flush(_kcp, pinnedBuffer + _reserved, buffer, _output);
             }
         }
-
-        /// <summary>
-        ///     Flush
-        /// </summary>
-        public void Flush(byte* buffer) => ikcp_flush(_kcp, buffer, _reserved, _output);
 
         /// <summary>
         ///     Set maximum transmission unit
