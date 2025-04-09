@@ -252,7 +252,7 @@ namespace kcp
         //---------------------------------------------------------------------
         // create a new kcpcb
         //---------------------------------------------------------------------
-        public static IKCPCB* ikcp_create(uint conv, ref byte[] buffer)
+        public static IKCPCB* ikcp_create(uint conv, int reserved, ref byte[] buffer)
         {
             IKCPCB* kcp = (IKCPCB*)ikcp_malloc((nuint)sizeof(IKCPCB));
             if (kcp == null) return null;
@@ -274,7 +274,7 @@ namespace kcp
             kcp->mss = kcp->mtu - IKCP_OVERHEAD;
             kcp->stream = 0;
 
-            buffer = new byte[(kcp->mtu + IKCP_OVERHEAD) * 3];
+            buffer = new byte[(reserved + kcp->mtu + IKCP_OVERHEAD) * 3];
 
             iqueue_init(&kcp->snd_queue);
             iqueue_init(&kcp->rcv_queue);
@@ -1305,11 +1305,11 @@ namespace kcp
             return current + minimal;
         }
 
-        public static int ikcp_setmtu(IKCPCB* kcp, int mtu, ref byte[] buffer)
+        public static int ikcp_setmtu(IKCPCB* kcp, int mtu, int reserved, ref byte[] buffer)
         {
             if (mtu < 50 || mtu < (int)IKCP_OVERHEAD)
                 return -1;
-            buffer = new byte[(mtu + IKCP_OVERHEAD) * 3];
+            buffer = new byte[(reserved + mtu + IKCP_OVERHEAD) * 3];
             if (buffer == null)
                 return -2;
             kcp->mtu = (uint)mtu;

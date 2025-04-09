@@ -55,7 +55,7 @@ namespace KCP
         /// <param name="reserved">Reserved overhead</param>
         public Kcp(uint conv, KcpCallback output, int reserved = 0)
         {
-            _kcp = ikcp_create(conv, ref _buffer);
+            _kcp = ikcp_create(conv, reserved, ref _buffer);
             _output = output;
             _reserved = reserved;
         }
@@ -404,7 +404,7 @@ namespace KCP
         /// </summary>
         /// <param name="mtu">Maximum transmission unit</param>
         /// <returns>Set</returns>
-        public int SetMtu(int mtu) => ikcp_setmtu(_kcp, mtu, ref _buffer);
+        public int SetMtu(int mtu) => ikcp_setmtu(_kcp, mtu, _reserved, ref _buffer);
 
         /// <summary>
         ///     Set flush interval
