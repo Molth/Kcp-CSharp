@@ -1017,7 +1017,7 @@ namespace kcp
                 size = (int)(ptr - buffer);
                 if (size + (int)IKCP_OVERHEAD > (int)kcp->mtu)
                 {
-                    ikcp_output(kcp, kcp->buffer, size, callback);
+                    ikcp_output(kcp, buffer - reserved, size, callback);
                     ptr = buffer;
                 }
 
@@ -1062,7 +1062,7 @@ namespace kcp
                 size = (int)(ptr - buffer);
                 if (size + (int)IKCP_OVERHEAD > (int)kcp->mtu)
                 {
-                    ikcp_output(kcp, kcp->buffer, size, callback);
+                    ikcp_output(kcp, buffer - reserved, size, callback);
                     ptr = buffer;
                 }
 
@@ -1076,7 +1076,7 @@ namespace kcp
                 size = (int)(ptr - buffer);
                 if (size + (int)IKCP_OVERHEAD > (int)kcp->mtu)
                 {
-                    ikcp_output(kcp, kcp->buffer, size, callback);
+                    ikcp_output(kcp, buffer - reserved, size, callback);
                     ptr = buffer;
                 }
 
@@ -1173,7 +1173,7 @@ namespace kcp
 
                     if (size + need > (int)kcp->mtu)
                     {
-                        ikcp_output(kcp, kcp->buffer, size, callback);
+                        ikcp_output(kcp, buffer - reserved, size, callback);
                         ptr = buffer;
                     }
 
@@ -1196,7 +1196,7 @@ namespace kcp
             size = (int)(ptr - buffer);
             if (size > 0)
             {
-                ikcp_output(kcp, kcp->buffer, size, callback);
+                ikcp_output(kcp, buffer - reserved, size, callback);
             }
 
             // update ssthresh
