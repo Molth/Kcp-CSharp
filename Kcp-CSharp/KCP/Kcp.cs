@@ -377,7 +377,7 @@ namespace KCP
         {
             fixed (byte* ptr = &_buffer[_reserved])
             {
-                ikcp_update(_kcp, current, ptr, (_buffer, _output));
+                ikcp_update(_kcp, current, ptr, _buffer, _output);
             }
         }
 
@@ -395,7 +395,7 @@ namespace KCP
         {
             fixed (byte* ptr = &_buffer[_reserved])
             {
-                ikcp_flush(_kcp, ptr, (_buffer, _output));
+                ikcp_flush(_kcp, ptr, _buffer, _output);
             }
         }
 
