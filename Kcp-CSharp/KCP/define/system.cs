@@ -4,7 +4,6 @@ using System.Runtime.InteropServices;
 
 #if !NETSTANDARD
 using System.Runtime.CompilerServices;
-
 #else
 using nint = System.IntPtr;
 using nuint = System.UIntPtr;
