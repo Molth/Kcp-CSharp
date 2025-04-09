@@ -15,7 +15,7 @@ namespace KCP
     /// <summary>
     ///     Kcp callback
     /// </summary>
-    public unsafe delegate void KcpCallback(byte* buffer, int length);
+    public unsafe delegate void KcpCallback(Span<byte> buffer);
 
     /// <summary>
     ///     Kcp
@@ -33,6 +33,11 @@ namespace KCP
         private KcpCallback _output;
 
         /// <summary>
+        ///     Reserved overhead
+        /// </summary>
+        private int _reserved;
+
+        /// <summary>
         ///     Disposed
         /// </summary>
         private int _disposed;
@@ -42,10 +47,12 @@ namespace KCP
         /// </summary>
         /// <param name="conv">ConversationId</param>
         /// <param name="output">Output</param>
-        public Kcp(uint conv, KcpCallback output)
+        /// <param name="reserved">Reserved overhead</param>
+        public Kcp(uint conv, KcpCallback output, int reserved = 0)
         {
             _kcp = ikcp_create(conv);
             _output = output;
+            _reserved = reserved;
         }
 
         /// <summary>
@@ -254,6 +261,11 @@ namespace KCP
         public KcpCallback Output => _output;
 
         /// <summary>
+        ///     Reserved overhead
+        /// </summary>
+        public int Reserved => _reserved;
+
+        /// <summary>
         ///     Dispose
         /// </summary>
         public void Dispose()
@@ -351,7 +363,20 @@ namespace KCP
         /// </summary>
         /// <param name="current">Timestamp</param>
         /// <param name="buffer">Buffer</param>
-        public void Update(uint current, byte* buffer) => ikcp_update(_kcp, current, buffer, _output);
+        public void Update(uint current, Span<byte> buffer)
+        {
+            fixed (byte* pinnedBuffer = &MemoryMarshal.GetReference(buffer))
+            {
+                ikcp_update(_kcp, current, pinnedBuffer, _reserved, _output);
+            }
+        }
+
+        /// <summary>
+        ///     Update
+        /// </summary>
+        /// <param name="current">Timestamp</param>
+        /// <param name="buffer">Buffer</param>
+        public void Update(uint current, byte* buffer) => ikcp_update(_kcp, current, buffer, _reserved, _output);
 
         /// <summary>
         ///     Check
@@ -363,7 +388,18 @@ namespace KCP
         /// <summary>
         ///     Flush
         /// </summary>
-        public void Flush(byte* buffer) => ikcp_flush(_kcp, buffer, _output);
+        public void Flush(Span<byte> buffer)
+        {
+            fixed (byte* pinnedBuffer = &MemoryMarshal.GetReference(buffer))
+            {
+                ikcp_flush(_kcp, pinnedBuffer, _reserved, _output);
+            }
+        }
+
+        /// <summary>
+        ///     Flush
+        /// </summary>
+        public void Flush(byte* buffer) => ikcp_flush(_kcp, buffer, _reserved, _output);
 
         /// <summary>
         ///     Set maximum transmission unit

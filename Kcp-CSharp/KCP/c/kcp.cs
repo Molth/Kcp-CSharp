@@ -2,6 +2,7 @@
 using System.Numerics;
 #endif
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using KCP;
 
 #if NETSTANDARD
@@ -246,7 +247,7 @@ namespace kcp
             assert(callback != null);
 
             if (size == 0) return;
-            callback(data, size);
+            callback(MemoryMarshal.CreateSpan(ref *data, size));
         }
 
         //---------------------------------------------------------------------
@@ -978,7 +979,7 @@ namespace kcp
         //---------------------------------------------------------------------
         // ikcp_flush
         //---------------------------------------------------------------------
-        public static void ikcp_flush(IKCPCB* kcp, byte* buffer, KcpCallback callback)
+        public static void ikcp_flush(IKCPCB* kcp, byte* buffer, int reversed, KcpCallback callback)
         {
             uint current = kcp->current;
             byte* ptr = buffer;
@@ -1009,7 +1010,7 @@ namespace kcp
                 size = (int)(ptr - buffer);
                 if (size + (int)IKCP_OVERHEAD > (int)kcp->mtu)
                 {
-                    ikcp_output(kcp, buffer, size, callback);
+                    ikcp_output(kcp, buffer - reversed, size, callback);
                     ptr = buffer;
                 }
 
@@ -1054,7 +1055,7 @@ namespace kcp
                 size = (int)(ptr - buffer);
                 if (size + (int)IKCP_OVERHEAD > (int)kcp->mtu)
                 {
-                    ikcp_output(kcp, buffer, size, callback);
+                    ikcp_output(kcp, buffer - reversed, size, callback);
                     ptr = buffer;
                 }
 
@@ -1068,7 +1069,7 @@ namespace kcp
                 size = (int)(ptr - buffer);
                 if (size + (int)IKCP_OVERHEAD > (int)kcp->mtu)
                 {
-                    ikcp_output(kcp, buffer, size, callback);
+                    ikcp_output(kcp, buffer - reversed, size, callback);
                     ptr = buffer;
                 }
 
@@ -1165,7 +1166,7 @@ namespace kcp
 
                     if (size + need > (int)kcp->mtu)
                     {
-                        ikcp_output(kcp, buffer, size, callback);
+                        ikcp_output(kcp, buffer - reversed, size, callback);
                         ptr = buffer;
                     }
 
@@ -1188,7 +1189,7 @@ namespace kcp
             size = (int)(ptr - buffer);
             if (size > 0)
             {
-                ikcp_output(kcp, buffer, size, callback);
+                ikcp_output(kcp, buffer - reversed, size, callback);
             }
 
             // update ssthresh
@@ -1218,7 +1219,7 @@ namespace kcp
             }
         }
 
-        public static void ikcp_update(IKCPCB* kcp, uint current, byte* buffer, KcpCallback callback)
+        public static void ikcp_update(IKCPCB* kcp, uint current, byte* buffer, int reversed, KcpCallback callback)
         {
             int slap;
 
@@ -1246,7 +1247,7 @@ namespace kcp
                     kcp->ts_flush = kcp->current + kcp->interval;
                 }
 
-                ikcp_flush(kcp, buffer, callback);
+                ikcp_flush(kcp, buffer, reversed, callback);
             }
         }
 
