@@ -528,7 +528,7 @@ namespace kcp
             if (len <= (int)kcp->mss) count = 1;
             else count = (int)((len + kcp->mss - 1) / kcp->mss);
 
-            if (kcp->stream == 0 && count >= 255) return -2;
+            if (kcp->stream == 0 && count > 255) return -2;
 
             if (count >= (int)kcp->rcv_wnd)
             {
