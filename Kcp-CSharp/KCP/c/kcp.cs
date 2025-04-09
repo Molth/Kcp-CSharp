@@ -981,6 +981,7 @@ namespace kcp
         //---------------------------------------------------------------------
         public static void ikcp_flush(IKCPCB* kcp, byte* buffer, int reversed, KcpCallback callback)
         {
+            buffer += reversed;
             uint current = kcp->current;
             byte* ptr = buffer;
             int count, size, i;
