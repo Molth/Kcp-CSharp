@@ -52,7 +52,7 @@ namespace kcp
             Unsafe.InitBlockUnaligned(dst, val, (uint)size);
 #else
             for (ulong i = 0; i < (ulong)size; ++i)
-                *((byte*)dst) = val;
+                ((byte*)dst)[i] = val;
 #endif
         }
 
