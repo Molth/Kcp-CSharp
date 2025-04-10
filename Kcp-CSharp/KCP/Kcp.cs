@@ -15,6 +15,8 @@ namespace KCP
     /// <summary>
     ///     Kcp callback
     /// </summary>
+    /// <param name="buffer">KCP output destination</param>
+    /// <param name="length">KCP output size (excluding reserved)</param>
     public unsafe delegate void KcpCallback(Span<byte> buffer, int length);
 
     /// <summary>
