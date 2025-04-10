@@ -988,7 +988,8 @@ namespace kcp
         public static void ikcp_flush(IKCPCB* kcp, int reserved, KcpCallback output)
         {
             uint current = kcp->current;
-            byte* buffer = kcp->buffer + reserved;
+            byte* destination = kcp->buffer;
+            byte* buffer = destination + reserved;
             byte* ptr = buffer;
             int count, size, i;
             uint resent, cwnd;
@@ -1017,7 +1018,7 @@ namespace kcp
                 size = (int)(ptr - buffer);
                 if (size + (int)IKCP_OVERHEAD > (int)kcp->mtu)
                 {
-                    ikcp_output(kcp, buffer - reserved, size, output);
+                    ikcp_output(kcp, destination, size, output);
                     ptr = buffer;
                 }
 
@@ -1062,7 +1063,7 @@ namespace kcp
                 size = (int)(ptr - buffer);
                 if (size + (int)IKCP_OVERHEAD > (int)kcp->mtu)
                 {
-                    ikcp_output(kcp, buffer - reserved, size, output);
+                    ikcp_output(kcp, destination, size, output);
                     ptr = buffer;
                 }
 
@@ -1076,7 +1077,7 @@ namespace kcp
                 size = (int)(ptr - buffer);
                 if (size + (int)IKCP_OVERHEAD > (int)kcp->mtu)
                 {
-                    ikcp_output(kcp, buffer - reserved, size, output);
+                    ikcp_output(kcp, destination, size, output);
                     ptr = buffer;
                 }
 
@@ -1173,7 +1174,7 @@ namespace kcp
 
                     if (size + need > (int)kcp->mtu)
                     {
-                        ikcp_output(kcp, buffer - reserved, size, output);
+                        ikcp_output(kcp, destination, size, output);
                         ptr = buffer;
                     }
 
@@ -1196,7 +1197,7 @@ namespace kcp
             size = (int)(ptr - buffer);
             if (size > 0)
             {
-                ikcp_output(kcp, buffer - reserved, size, output);
+                ikcp_output(kcp, destination, size, output);
             }
 
             // update ssthresh
