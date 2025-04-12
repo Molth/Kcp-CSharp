@@ -4,12 +4,6 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using KCP;
 
-#if NETSTANDARD
-using System;
-using nint = System.IntPtr;
-using nuint = System.UIntPtr;
-#endif
-
 #pragma warning disable CA2211
 #pragma warning disable CS1591
 #pragma warning disable CS8602
@@ -174,24 +168,14 @@ namespace kcp
         //---------------------------------------------------------------------
         // manage segment
         //---------------------------------------------------------------------
-#if !NETSTANDARD
         public static delegate* managed<nuint, void*> ikcp_malloc_hook = null;
         public static delegate* managed<void*, void> ikcp_free_hook = null;
-#else
-        public static Func<nuint, nint>? ikcp_malloc_hook = null;
-        public static Action<nint>? ikcp_free_hook = null;
-#endif
 
         // internal malloc
         public static void* ikcp_malloc(nuint size)
         {
-#if !NETSTANDARD
             if (ikcp_malloc_hook != null)
                 return ikcp_malloc_hook(size);
-#else
-            if (ikcp_malloc_hook != null)
-                return (void*)ikcp_malloc_hook(size);
-#endif
             return malloc(size);
         }
 
@@ -200,11 +184,7 @@ namespace kcp
         {
             if (ikcp_free_hook != null)
             {
-#if !NETSTANDARD
                 ikcp_free_hook(ptr);
-#else
-                ikcp_free_hook((nint)ptr);
-#endif
             }
             else
             {
@@ -213,19 +193,11 @@ namespace kcp
         }
 
         // redefine allocator
-#if !NETSTANDARD
         public static void ikcp_allocator(delegate* managed<nuint, void*> new_malloc, delegate* managed<void*, void> new_free)
         {
             ikcp_malloc_hook = new_malloc;
             ikcp_free_hook = new_free;
         }
-#else
-        public static void ikcp_allocator(Func<nuint, nint> new_malloc, Action<nint> new_free)
-        {
-            ikcp_malloc_hook = new_malloc;
-            ikcp_free_hook = new_free;
-        }
-#endif
 
         // allocate a new kcp segment
         public static IKCPSEG* ikcp_segment_new(IKCPCB* kcp, int size)
