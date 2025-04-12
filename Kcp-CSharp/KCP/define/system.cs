@@ -1,13 +1,7 @@
 using System;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-
-#if !NETSTANDARD
 using System.Runtime.CompilerServices;
-#else
-using nint = System.IntPtr;
-using nuint = System.UIntPtr;
-#endif
+using System.Runtime.InteropServices;
 
 #pragma warning disable CS1591
 
@@ -20,11 +14,9 @@ namespace kcp
         public static void* malloc(nuint size)
         {
 #if NET6_0_OR_GREATER
-            return NativeMemory.Alloc(size);
-#elif !NETSTANDARD
-            return (void*)Marshal.AllocHGlobal((nint)size);
+            return NativeMemory.Alloc((nuint)size);
 #else
-            return (void*)Marshal.AllocHGlobal((int)size);
+            return (void*)Marshal.AllocHGlobal((nint)size);
 #endif
         }
 
@@ -37,24 +29,9 @@ namespace kcp
 #endif
         }
 
-        public static void memcpy(void* dst, void* src, nuint size)
-        {
-#if !NETSTANDARD
-            Unsafe.CopyBlockUnaligned(dst, src, (uint)size);
-#else
-            Buffer.MemoryCopy(src, dst, (ulong)size, (ulong)size);
-#endif
-        }
+        public static void memcpy(void* dst, void* src, nuint size) => Unsafe.CopyBlockUnaligned(dst, src, (uint)size);
 
-        public static void memset(void* dst, byte val, nuint size)
-        {
-#if !NETSTANDARD
-            Unsafe.InitBlockUnaligned(dst, val, (uint)size);
-#else
-            for (ulong i = 0; i < (ulong)size; ++i)
-                ((byte*)dst)[i] = val;
-#endif
-        }
+        public static void memset(void* dst, byte val, nuint size) => Unsafe.InitBlockUnaligned(dst, val, (uint)size);
 
         [Conditional("DEBUG")]
         public static void assert(bool condition) => Debug.Assert(condition);
